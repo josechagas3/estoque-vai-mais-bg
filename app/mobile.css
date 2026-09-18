@@ -6,6 +6,7 @@
   .topbar { padding-top: calc(16px + env(safe-area-inset-top)); }
   .content { padding: 20px 14px calc(88px + env(safe-area-inset-bottom)); }
   .nav {
+    display: flex !important;
     position: fixed;
     inset: auto 0 0;
     height: calc(64px + env(safe-area-inset-bottom));
@@ -14,10 +15,15 @@
     border-bottom: 0;
     box-shadow: 0 -8px 24px rgba(30, 27, 22, .08);
     overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
     background: color-mix(in srgb, var(--paper) 94%, transparent);
     backdrop-filter: blur(14px);
   }
-  .nav button { min-width: 88px; min-height: 58px; padding: 7px 4px; flex-direction: column; gap: 4px; font-size: 10px; }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav button { flex: 0 0 112px; min-width: 112px; min-height: 58px; padding: 7px 6px; flex-direction: column; gap: 4px; font-size: 10px; white-space: nowrap; scroll-snap-align: start; }
+  .nav { scroll-snap-type: x proximity; }
   .nav button svg { width: 19px; height: 19px; }
   .page-title { align-items: flex-start; }
   .page-title h1 { font-size: 22px; }
