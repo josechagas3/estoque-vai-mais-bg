@@ -44,11 +44,16 @@ export default function Page() {
     void Promise.all([
       supabase.from('stock_products').select('id,name,category,unit,current_quantity,minimum_quantity,ideal_quantity').order('name'),
       supabase.from('stock_movements').select('id,product_id,movement_type,quantity,movement_date').order('movement_date', { ascending: true }),
-    ]).then(([productResult, movementResult]) => {
+    ]).then(async ([productResult, movementResult]) => {
       if (productResult.error || movementResult.error) return
       const databaseProducts = productResult.data ?? []
       if (!databaseProducts.length) {
-        void supabase.from('stock_products').upsert(initialProducts.map((p) => ({ id: p.id, name: p.name, category: p.category, unit: p.unit, current_quantity: p.current, minimum_quantity: p.minimum, ideal_quantity: p.ideal })))
+        const { error: seedError } = await supabase.from('stock_products').upsert(initialProducts.map((p) => ({ id: p.id, name: p.name, category: p.category, unit: p.unit, current_quantity: p.current, minimum_quantity: p.minimum, ideal_quantity: p.ideal })))
+        if (seedError) {
+          console.error('[v0] Erro ao carregar produtos iniciais:', seedError)
+          setToast(`Erro ao carregar produtos: ${seedError.message}`)
+          return
+        }
         setProducts(initialProducts)
       } else {
         setProducts(databaseProducts.map((p) => ({ id: p.id, name: p.name, category: p.category, unit: p.unit, current: p.current_quantity, minimum: p.minimum_quantity, ideal: p.ideal_quantity })))
@@ -71,11 +76,20 @@ export default function Page() {
     const supabase = createClient()
     const nextQuantity = type === 'Entrada' ? product.current + amount : product.current - amount
     const movementId = crypto.randomUUID()
-    const { error: movementError } = await supabase.from('stock_movements').insert({ id: movementId, product_id: product.id, movement_type: type, quantity: amount, movement_date: today() })
-    const { error: productError } = await supabase.from('stock_products').update({ current_quantity: nextQuantity, updated_at: today() }).eq('id', product.id)
-    if (movementError || productError) return setToast('Não foi possível salvar a movimentação.')
+    const movementDate = today()
+    const { error: movementError } = await supabase.from('stock_movements').insert({ id: movementId, product_id: product.id, movement_type: type, quantity: amount, movement_date: movementDate })
+    if (movementError) {
+      console.error('[v0] Erro ao inserir movimentação:', movementError)
+      return setToast(`Erro ao salvar movimentação: ${movementError.message}`)
+    }
+    const { error: productError } = await supabase.from('stock_products').update({ current_quantity: nextQuantity, updated_at: movementDate }).eq('id', product.id)
+    if (productError) {
+      console.error('[v0] Erro ao atualizar estoque:', productError)
+      await supabase.from('stock_movements').delete().eq('id', movementId)
+      return setToast(`Erro ao atualizar estoque: ${productError.message}`)
+    }
     setProducts((current) => current.map((p) => p.id === product.id ? { ...p, current: nextQuantity } : p))
-    setMovements((current) => [...current, { id: movementId, productId: product.id, type, quantity: amount, date: today() }])
+    setMovements((current) => [...current, { id: movementId, productId: product.id, type, quantity: amount, date: movementDate }])
     setQuantity(''); setSelectedProduct(''); setToast(`${type} registrada para ${product.name}.`)
   }
   async function saveProduct() { if (!editing?.name.trim()) return; const supabase = createClient(); const payload = { id: editing.id, name: editing.name.trim(), category: editing.category, unit: editing.unit.trim(), current_quantity: editing.current, minimum_quantity: editing.minimum, ideal_quantity: editing.ideal, updated_at: today() }; const { error } = await supabase.from('stock_products').upsert(payload); if (error) return setToast('Não foi possível salvar o produto.'); setProducts((current) => current.some((p) => p.id === editing.id) ? current.map((p) => p.id === editing.id ? editing : p) : [...current, editing]); setEditing(null); setToast('Produto salvo.') }
