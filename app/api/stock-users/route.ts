@@ -24,17 +24,22 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const body = await request.json() as { id?: string; auth_user_id?: string }
-  if (!body.id || !body.auth_user_id) return NextResponse.json({ error: 'Usuário inválido.' }, { status: 400 })
+  const body = await request.json() as { id?: string }
+  if (!body.id) return NextResponse.json({ error: 'Usuário inválido.' }, { status: 400 })
   const supabase = admin()
+  const { data: user, error: lookupError } = await supabase.from('stock_users').select('id,auth_user_id').eq('id', body.id).maybeSingle()
+  if (lookupError) return NextResponse.json({ error: `Supabase Database: ${lookupError.message} (${lookupError.code ?? 'sem código'})` }, { status: 500 })
+  if (!user) return NextResponse.json({ error: 'Usuário não encontrado.' }, { status: 404 })
   const { count, error: countError } = await supabase.from('stock_users').select('id', { count: 'exact', head: true }).eq('active', true)
-  if (countError) return NextResponse.json({ error: 'Não foi possível verificar os usuários.' }, { status: 500 })
+  if (countError) return NextResponse.json({ error: `Supabase Database: ${countError.message} (${countError.code ?? 'sem código'})` }, { status: 500 })
   if ((count ?? 0) <= 1) return NextResponse.json({ error: 'Não é possível excluir o último usuário do sistema.' }, { status: 409 })
-  const { error: authError } = await supabase.auth.admin.deleteUser(body.auth_user_id)
-  if (authError) return NextResponse.json({ error: 'Não foi possível excluir o acesso do usuário.' }, { status: 400 })
+  if (user.auth_user_id) {
+    const { error: authError } = await supabase.auth.admin.deleteUser(user.auth_user_id)
+    if (authError) return NextResponse.json({ error: `Supabase Auth: ${authError.message}` }, { status: 400 })
+  }
   const { error } = await supabase.from('stock_users').delete().eq('id', body.id)
-  if (error) return NextResponse.json({ error: 'Não foi possível remover o cadastro do usuário.' }, { status: 500 })
-  return NextResponse.json({ ok: true })
+  if (error) return NextResponse.json({ error: `Supabase Database: ${error.message} (${error.code ?? 'sem código'})` }, { status: 500 })
+  return NextResponse.json({ ok: true, id: body.id })
 }
 
 export async function PATCH(request: Request) {
