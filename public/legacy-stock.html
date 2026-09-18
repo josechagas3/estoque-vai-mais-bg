@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Estoque · Vai Mais BG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1E1B16;
+    --paper:#F7F4EE;
+    --paper-2:#EFEAE0;
+    --yellow:#FFD600;
+    --red:#CC0000;
+    --muted:#8A8177;
+    --line:#DCD5C7;
+    --success:#2F7A4F;
+    --font-head:'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+    --font-body:'Inter', ui-sans-serif, system-ui, sans-serif;
+  }
+  :root:not([data-theme="light"]){
+    --ink:#1E1B16; --paper:#F7F4EE; --paper-2:#EFEAE0; --line:#DCD5C7; --muted:#8A8177;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink:#F2EDE2; --paper:#171410; --paper-2:#211D17; --line:#3A342A; --muted:#9A9285;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#F2EDE2; --paper:#171410; --paper-2:#211D17; --line:#3A342A; --muted:#9A9285;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--font-body);
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    padding-bottom:96px;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:0 16px;}
+  header.top{background:var(--ink);color:var(--paper);padding:22px 16px 20px;}
+  header.top .wrap{display:flex;flex-direction:column;gap:4px;}
+  .brand-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px;}
+  .brand{font-family:var(--font-head);font-weight:700;font-size:22px;letter-spacing:-0.01em;}
+  .brand span{color:var(--yellow);}
+  .datebadge{font-size:12px;color:var(--paper-2);opacity:.75;white-space:nowrap;}
+  .subtitle{font-size:13px;color:var(--paper-2);opacity:.8;margin-top:2px;}
+  .readonly-banner{background:var(--red);color:#fff;font-size:12.5px;padding:8px 16px;text-align:center;}
+  nav.tabs{
+    position:sticky;top:0;z-index:20;
+    display:flex;background:var(--paper);
+    border-bottom:1px solid var(--line);
+  }
+  nav.tabs button{
+    flex:1;padding:12px 4px;background:none;border:none;
+    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--muted);
+    border-bottom:3px solid transparent;cursor:pointer;
+  }
+  nav.tabs button.active{color:var(--ink);border-bottom-color:var(--yellow);}
+  main{padding-top:14px;}
+  section.view{display:none;}
+  section.view.active{display:block;}
+  .shift-label{
+    font-family:var(--font-head);font-weight:700;font-size:15px;color:var(--ink);
+    margin-bottom:6px;
+  }
+  .avulsa-toggle{font-size:12.5px;color:var(--muted);text-decoration:underline;background:none;border:none;cursor:pointer;padding:0 0 16px;font-family:var(--font-body);}
+  .avulsa-input{width:100%;padding:11px;border-radius:10px;border:1px solid var(--line);background:var(--paper-2);color:var(--ink);font-family:var(--font-body);font-size:14px;margin-bottom:16px;display:none;}
+  .cats-toolbar{display:flex;gap:8px;margin-bottom:12px;}
+  .cats-toolbar button{
+    flex:1;padding:9px;border-radius:8px;border:1px solid var(--line);background:var(--paper-2);
+    color:var(--ink);font-family:var(--font-body);font-weight:600;font-size:12.5px;cursor:pointer;
+  }
+  .cat{margin-bottom:14px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--paper-2);}
+  .cat-head{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 14px;background:var(--ink);color:var(--paper);cursor:pointer;
+  }
+  .cat-head .name{font-family:var(--font-head);font-weight:700;font-size:14.5px;}
+  .cat-head .count{font-size:12px;color:var(--yellow);font-weight:600;}
+  .cat-body{padding:2px 0;}
+  .cat.collapsed .cat-body{display:none;}
+  .cat-head .chev{transition:transform .15s ease;color:var(--muted);font-size:12px;}
+  .cat.collapsed .cat-head .chev{transform:rotate(-90deg);}
+  .item-row{
+    display:flex;align-items:center;gap:10px;padding:9px 14px;
+    border-bottom:1px dashed var(--line);
+  }
+  .item-row:last-child{border-bottom:none;}
+  .item-info{flex:1;min-width:0;}
+  .item-name{font-weight:600;font-size:14.5px;}
+  .item-meta{font-size:11.5px;color:var(--muted);margin-top:1px;}
+  .item-meta.low{color:var(--red);font-weight:600;}
+  .qty-compare{display:flex;gap:8px;flex-shrink:0;}
+  .qty-box{width:74px;display:flex;flex-direction:column;align-items:center;}
+  .qty-box-val{
+    width:100%;text-align:center;font-family:var(--font-head);font-weight:700;font-size:14.5px;
+    padding:9px 2px;border:1.5px dashed var(--line);border-radius:8px;background:transparent;color:var(--muted);
+    box-sizing:border-box;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .qty-box.qty-current input{
+    width:100%;text-align:center;font-family:var(--font-head);font-weight:700;font-size:17px;
+    padding:9px 2px;border:1.5px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);
+    box-sizing:border-box;-moz-appearance:textfield;
+  }
+  .qty-box.qty-current input:focus{border-color:var(--yellow);outline:none;}
+  .qty-box.qty-current input::-webkit-outer-spin-button,
+  .qty-box.qty-current input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+  .qty-box-label{font-size:9.5px;color:var(--muted);margin-top:4px;text-align:center;line-height:1.2;}
+  .footer-bar{
+    position:fixed;left:0;right:0;bottom:0;z-index:30;
+    background:var(--ink);color:var(--paper);
+    padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+    display:flex;align-items:center;gap:12px;
+  }
+  .footer-bar.hidden{display:none;}
+  .footer-bar .progress{font-size:12px;color:var(--paper-2);opacity:.85;flex:1;}
+  .footer-bar .progress b{color:var(--yellow);}
+  .save-btn{
+    background:var(--yellow);color:var(--ink);border:none;border-radius:10px;
+    font-family:var(--font-head);font-weight:700;font-size:14.5px;padding:12px 20px;cursor:pointer;
+  }
+  .save-btn:disabled{opacity:.5;cursor:not-allowed;}
+  .session-card{border:1px solid var(--line);border-radius:12px;background:var(--paper-2);margin-bottom:12px;overflow:hidden;}
+  .session-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer;}
+  .session-head .s-title{font-family:var(--font-head);font-weight:700;font-size:14.5px;}
+  .session-head .s-sub{font-size:11.5px;color:var(--muted);margin-top:2px;}
+  .session-body{display:none;padding:0 14px 10px;}
+  .session-card.open .session-body{display:block;}
+  .session-row{display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px dashed var(--line);}
+  .session-row:last-child{border-bottom:none;}
+  .session-row .v{font-family:var(--font-head);font-weight:700;}
+  .empty-state{text-align:center;padding:40px 20px;color:var(--muted);font-size:14px;line-height:1.6;}
+  .edit-item{
+    display:flex;flex-direction:column;gap:8px;border:1px solid var(--line);
+    border-radius:12px;background:var(--paper-2);padding:12px 14px;margin-bottom:10px;
+  }
+  .edit-row{display:flex;gap:8px;}
+  .edit-row input, .edit-row select{
+    flex:1;min-width:0;padding:9px 10px;border:1px solid var(--line);border-radius:8px;
+    background:var(--paper);color:var(--ink);font-family:var(--font-body);font-size:13.5px;
+  }
+  .edit-row .del{
+    flex:0 0 auto;width:38px;background:var(--paper);border:1px solid var(--line);
+    border-radius:8px;color:var(--red);font-size:16px;cursor:pointer;
+  }
+  .add-item-btn{
+    width:100%;padding:13px;border-radius:10px;border:1.5px dashed var(--line);
+    background:none;color:var(--ink);font-family:var(--font-body);font-weight:600;font-size:14px;
+    cursor:pointer;margin-top:4px;
+  }
+  .items-save-btn{
+    width:100%;padding:14px;border-radius:10px;border:none;background:var(--yellow);color:var(--ink);
+    font-family:var(--font-head);font-weight:700;font-size:14.5px;cursor:pointer;margin:16px 0 28px;
+  }
+  .section-title{font-family:var(--font-head);font-weight:700;font-size:15px;margin:18px 0 10px;}
+  .hint{font-size:12.5px;color:var(--muted);margin-bottom:14px;line-height:1.5;}
+  .toast{
+    position:fixed;left:50%;bottom:78px;transform:translateX(-50%);
+    background:var(--success);color:#fff;padding:10px 18px;border-radius:20px;
+    font-size:13.5px;font-weight:600;z-index:40;opacity:0;pointer-events:none;transition:opacity .2s ease;
+    max-width:88%;text-align:center;
+  }
+  .toast.error{background:var(--red);}
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand-row">
+      <div class="brand">Estoque <span>Vai Mais BG</span></div>
+      <div class="datebadge" id="today-badge"></div>
+    </div>
+    <div class="subtitle">Contagem de quarta e domingo, direto do celular</div>
+  </div>
+</header>
+
+<div id="readonly-banner" class="readonly-banner" style="display:none;">Modo leitura — peça acesso de edição para salvar alterações</div>
+
+<nav class="tabs">
+  <button data-tab="contagem" class="active" type="button">Contagem</button>
+  <button data-tab="historico" type="button">Histórico</button>
+  <button data-tab="itens" type="button">Itens</button>
+</nav>
+
+<main class="wrap">
+
+  <section class="view active" id="view-contagem">
+    <div class="shift-label" id="shift-label"></div>
+    <button class="avulsa-toggle" id="avulsa-toggle" type="button">Dar um nome diferente para esta contagem</button>
+    <input class="avulsa-input" id="avulsa-input" type="text" placeholder="Ex: conferência extra">
+    <div class="cats-toolbar">
+      <button type="button" id="expand-all">Abrir tudo</button>
+      <button type="button" id="collapse-all">Fechar tudo</button>
+    </div>
+    <div id="cats-container"></div>
+  </section>
+
+  <section class="view" id="view-historico">
+    <div id="hist-container"></div>
+  </section>
+
+  <section class="view" id="view-itens">
+    <div class="section-title">Itens do estoque</div>
+    <p class="hint">Adicione, edite ou remova itens. Defina um mínimo para receber alerta quando a contagem vier abaixo dele. Lembre de tocar em "Salvar alterações" no final.</p>
+    <div id="items-editor"></div>
+    <button class="add-item-btn" id="add-item-btn" type="button">+ adicionar item</button>
+    <button class="items-save-btn" id="items-save-btn" type="button">Salvar alterações nos itens</button>
+  </section>
+
+</main>
+
+<div class="footer-bar" id="footer-bar">
+  <div class="progress" id="progress-text"></div>
+  <button class="save-btn" id="save-btn" type="button">Salvar contagem</button>
+</div>
+<div class="toast" id="toast"></div>
+<datalist id="unit-options">
+  <option value="kg"><option value="un"><option value="L"><option value="cx">
+  <option value="pacote"><option value="lata"><option value="cartela"><option value="bag">
+  <option value="balde"><option value="pc">
+</datalist>
+
+<script id="app-state" type="application/json">{"items": [{"id": "idalfaceamericana1", "name": "Alface americana", "category": "Saladas e Frutas", "unit": "cx", "min": null}, {"id": "idtomatelongavida2", "name": "Tomate longa vida", "category": "Saladas e Frutas", "unit": "cx", "min": null}, {"id": "idtomateitaliano3", "name": "Tomate italiano", "category": "Saladas e Frutas", "unit": "cx", "min": null}, {"id": "idrucula4", "name": "Rúcula", "category": "Saladas e Frutas", "unit": "cx", "min": null}, {"id": "idcebola5", "name": "Cebola", "category": "Saladas e Frutas", "unit": "kg", "min": null}, {"id": "idcebolaroxa6", "name": "Cebola roxa", "category": "Saladas e Frutas", "unit": "cx", "min": null}, {"id": "idlaranjasuco7", "name": "Laranja suco", "category": "Saladas e Frutas", "unit": "cx", "min": null}, {"id": "idlimaotaiti8", "name": "Limão taiti", "category": "Saladas e Frutas", "unit": "cx", "min": null}, {"id": "idmorango9", "name": "Morango", "category": "Saladas e Frutas", "unit": "cx", "min": null}, {"id": "idtomilho10", "name": "Tomilho", "category": "Saladas e Frutas", "unit": "un", "min": null}, {"id": "idmanjericao11", "name": "Manjericão", "category": "Saladas e Frutas", "unit": "un", "min": null}, {"id": "idsalsa12", "name": "Salsa", "category": "Saladas e Frutas", "unit": "un", "min": null}, {"id": "idalho13", "name": "Alho", "category": "Saladas e Frutas", "unit": "kg", "min": null}, {"id": "idalhoporo14", "name": "Alho poró", "category": "Saladas e Frutas", "unit": "un", "min": null}, {"id": "idcenoura15", "name": "Cenoura", "category": "Saladas e Frutas", "unit": "kg", "min": null}, {"id": "idovos16", "name": "Ovos", "category": "Mercearia e Secos", "unit": "cartela", "min": null}, {"id": "idoleodesoja17", "name": "Óleo de soja", "category": "Mercearia e Secos", "unit": "cx", "min": null}, {"id": "idoleodealgodao18", "name": "Óleo de algodão", "category": "Mercearia e Secos", "unit": "un", "min": null}, {"id": "idgeleiadepimenta19", "name": "Geleia de pimenta", "category": "Mercearia e Secos", "unit": "balde", "min": null}, {"id": "idfarinhapanko20", "name": "Farinha panko", "category": "Mercearia e Secos", "unit": "pacote", "min": null}, {"id": "idfarinhadetrigo21", "name": "Farinha de trigo", "category": "Mercearia e Secos", "unit": "kg", "min": null}, {"id": "idketchup22", "name": "Ketchup", "category": "Mercearia e Secos", "unit": "bag", "min": null}, {"id": "idpicles23", "name": "Picles", "category": "Mercearia e Secos", "unit": "cx", "min": null}, {"id": "idmostarda24", "name": "Mostarda", "category": "Mercearia e Secos", "unit": "un", "min": null}, {"id": "idacucarcristal25", "name": "Açúcar cristal", "category": "Mercearia e Secos", "unit": "kg", "min": null}, {"id": "idsal26", "name": "Sal", "category": "Mercearia e Secos", "unit": "pacote", "min": null}, {"id": "idsazon27", "name": "Sazon", "category": "Mercearia e Secos", "unit": "pacote", "min": null}, {"id": "idovomaltine28", "name": "Ovomaltine", "category": "Mercearia e Secos", "unit": "pacote", "min": null}, {"id": "idarroz29", "name": "Arroz", "category": "Mercearia e Secos", "unit": "kg", "min": null}, {"id": "idfeijao30", "name": "Feijão", "category": "Mercearia e Secos", "unit": "kg", "min": null}, {"id": "idespaguete31", "name": "Espaguete", "category": "Mercearia e Secos", "unit": "pacote", "min": null}, {"id": "idfigo32", "name": "Figo", "category": "Mercearia e Secos", "unit": "un", "min": null}, {"id": "idbbq33", "name": "BBQ", "category": "Mercearia e Secos", "unit": "cx", "min": null}, {"id": "idoregano34", "name": "Orégano", "category": "Mercearia e Secos", "unit": "pacote", "min": null}, {"id": "idketchupsache35", "name": "Ketchup sachê", "category": "Mercearia e Secos", "unit": "cx", "min": null}, {"id": "idleite36", "name": "Leite", "category": "Mercearia e Secos", "unit": "L", "min": null}, {"id": "idamendoim37", "name": "Amendoim", "category": "Mercearia e Secos", "unit": "un", "min": null}, {"id": "idabacaxi38", "name": "Abacaxi", "category": "Mercearia e Secos", "unit": "cx", "min": null}, {"id": "idmisturadeovos39", "name": "Mistura de ovos", "category": "Mercearia e Secos", "unit": "kg", "min": null}, {"id": "idpotedemaionese40", "name": "Pote de maionese", "category": "Mercearia e Secos", "unit": "cx", "min": null}, {"id": "idcremedeleite41", "name": "Creme de leite", "category": "Mercearia e Secos", "unit": "un", "min": null}, {"id": "idleitedecoco42", "name": "Leite de coco", "category": "Mercearia e Secos", "unit": "un", "min": null}, {"id": "idcoberturadecaram43", "name": "Cobertura de caramelo", "category": "Mercearia e Secos", "unit": "un", "min": null}, {"id": "idleitecondensado44", "name": "Leite condensado", "category": "Mercearia e Secos", "unit": "un", "min": null}, {"id": "idnutella45", "name": "Nutella", "category": "Mercearia e Secos", "unit": "cx", "min": null}, {"id": "idnata300g46", "name": "Nata 300g", "category": "Mercearia e Secos", "unit": "un", "min": null}, {"id": "idmanteiga200g47", "name": "Manteiga 200g", "category": "Mercearia e Secos", "unit": "un", "min": null}, {"id": "idmilho48", "name": "Milho", "category": "Mercearia e Secos", "unit": "lata", "min": null}, {"id": "idbatata49", "name": "Batata", "category": "Congelados e Prontos", "unit": "pacote", "min": null}, {"id": "idbatatarustica50", "name": "Batata rústica", "category": "Congelados e Prontos", "unit": "pacote", "min": null}, {"id": "idpaosemgluten51", "name": "Pão sem glúten", "category": "Pães", "unit": "un", "min": 15}, {"id": "idpaobrioche1", "name": "Pão brioche", "category": "Pães", "unit": "un", "min": null}, {"id": "idpaodexis53", "name": "Pão de xis", "category": "Pães", "unit": "un", "min": 250}, {"id": "idchicken54", "name": "Chicken", "category": "Congelados e Prontos", "unit": "un", "min": null}, {"id": "idnuggets55", "name": "Nuggets", "category": "Congelados e Prontos", "unit": "pacote", "min": null}, {"id": "idaneisdecebola56", "name": "Anéis de cebola", "category": "Congelados e Prontos", "unit": "pacote", "min": null}, {"id": "idqueijogouda57", "name": "Queijo gouda", "category": "Congelados e Prontos", "unit": "un", "min": null}, {"id": "idprovoloneempanad58", "name": "Provolone empanado", "category": "Congelados e Prontos", "unit": "un", "min": null}, {"id": "idcremeamericano59", "name": "Creme americano", "category": "Congelados e Prontos", "unit": "un", "min": null}, {"id": "idbasedesorvete60", "name": "Base de sorvete", "category": "Congelados e Prontos", "unit": "cx", "min": null}, {"id": "idparmegiana61", "name": "Parmegiana", "category": "Congelados e Prontos", "unit": "un", "min": null}, {"id": "idervilha62", "name": "Ervilha", "category": "Congelados e Prontos", "unit": "lata", "min": null}, {"id": "idamora63", "name": "Amora", "category": "Congelados e Prontos", "unit": "un", "min": null}, {"id": "idvegetariano64", "name": "Vegetariano", "category": "Congelados e Prontos", "unit": "un", "min": null}, {"id": "idcarnedehamburgue65", "name": "Carne de hambúrguer", "category": "Carnes e Laticinios", "unit": "un", "min": null}, {"id": "idcarnemoida66", "name": "Carne moída", "category": "Carnes e Laticinios", "unit": "kg", "min": null}, {"id": "idqueijoprovolone67", "name": "Queijo provolone", "category": "Carnes e Laticinios", "unit": "un", "min": null}, {"id": "idqueijomussarela68", "name": "Queijo mussarela", "category": "Carnes e Laticinios", "unit": "un", "min": null}, {"id": "idbaconfatiado69", "name": "Bacon fatiado", "category": "Carnes e Laticinios", "unit": "kg", "min": null}, {"id": "idfarofadebacon70", "name": "Farofa de bacon", "category": "Carnes e Laticinios", "unit": "kg", "min": null}, {"id": "idcheddarfatiado71", "name": "Cheddar fatiado", "category": "Carnes e Laticinios", "unit": "un", "min": null}, {"id": "idcremedecheddar72", "name": "Creme de cheddar", "category": "Carnes e Laticinios", "unit": "un", "min": null}, {"id": "idpastadealho73", "name": "Pasta de alho", "category": "Carnes e Laticinios", "unit": "un", "min": null}, {"id": "idgorgonzola74", "name": "Gorgonzola", "category": "Carnes e Laticinios", "unit": "un", "min": null}, {"id": "idmussarelafatiada75", "name": "Mussarela fatiada", "category": "Carnes e Laticinios", "unit": "kg", "min": null}, {"id": "idcatupiry76", "name": "Catupiry", "category": "Carnes e Laticinios", "unit": "un", "min": null}, {"id": "idcreamcheese77", "name": "Cream cheese", "category": "Carnes e Laticinios", "unit": "un", "min": null}, {"id": "iddetergente5l1", "name": "Detergente 5L", "category": "Limpeza", "unit": "un", "min": null}, {"id": "idalcool705l2", "name": "Álcool 70% 5L", "category": "Limpeza", "unit": "un", "min": null}, {"id": "idaguasanitaria5l3", "name": "Água sanitária 5L", "category": "Limpeza", "unit": "un", "min": null}, {"id": "iddesinfetante5l4", "name": "Desinfetante 5L", "category": "Limpeza", "unit": "un", "min": null}, {"id": "idprodutoparachapa5", "name": "Produto para chapa 5L", "category": "Limpeza", "unit": "un", "min": null}, {"id": "idalcalangrill5l6", "name": "Alcalan Grill 5L", "category": "Limpeza", "unit": "un", "min": null}, {"id": "idmicrofibramop7", "name": "Microfibra mop", "category": "Limpeza", "unit": "un", "min": null}, {"id": "idfibra8", "name": "Fibra", "category": "Limpeza", "unit": "un", "min": null}, {"id": "idsaboneteespuma5l9", "name": "Sabonete espuma 5L", "category": "Limpeza", "unit": "un", "min": null}, {"id": "idrolodepapelhigie10", "name": "Rolo de papel higiênico", "category": "Limpeza", "unit": "un", "min": null}, {"id": "idpapeltoalhabanhe11", "name": "Papel toalha banheiro", "category": "Limpeza", "unit": "un", "min": null}, {"id": "idpapeltoalhacozin12", "name": "Papel toalha cozinha", "category": "Limpeza", "unit": "un", "min": null}, {"id": "idguardanaposalao13", "name": "Guardanapo salão", "category": "Limpeza", "unit": "pacote", "min": null}, {"id": "idlixa14", "name": "Lixa", "category": "Limpeza", "unit": "un", "min": null}, {"id": "idsabaoemposemchei15", "name": "Sabão em pó sem cheiro", "category": "Limpeza", "unit": "pacote", "min": null}, {"id": "idsapolioliquido16", "name": "Sapólio líquido", "category": "Limpeza", "unit": "un", "min": null}, {"id": "idgeladesivoparava17", "name": "Gel adesivo para vaso", "category": "Limpeza", "unit": "pacote", "min": null}, {"id": "idluvap18", "name": "Luva P", "category": "Limpeza", "unit": "cx", "min": null}, {"id": "idluvam19", "name": "Luva M", "category": "Limpeza", "unit": "cx", "min": null}, {"id": "idluvag20", "name": "Luva G", "category": "Limpeza", "unit": "cx", "min": null}, {"id": "idesponja21", "name": "Esponja", "category": "Limpeza", "unit": "pacote", "min": null}, {"id": "idsaco100l22", "name": "Saco 100L", "category": "Limpeza", "unit": "pacote", "min": null}, {"id": "idsaco15l23", "name": "Saco 15L", "category": "Limpeza", "unit": "pacote", "min": null}, {"id": "idsaco50l24", "name": "Saco 50L", "category": "Limpeza", "unit": "pacote", "min": null}, {"id": "idsaco30l25", "name": "Saco 30L", "category": "Limpeza", "unit": "pacote", "min": null}, {"id": "idtirapelos26", "name": "Tira-pelos", "category": "Limpeza", "unit": "pacote", "min": null}, {"id": "idtoucadecabelo27", "name": "Touca de cabelo", "category": "Limpeza", "unit": "un", "min": null}, {"id": "idtoucadebarba28", "name": "Touca de barba", "category": "Limpeza", "unit": "un", "min": null}, {"id": "idescovadeacobroil29", "name": "Escova de aço Broiler", "category": "Limpeza", "unit": "un", "min": null}, {"id": "idluvaamarelam30", "name": "Luva amarela M", "category": "Limpeza", "unit": "un", "min": null}, {"id": "idluvaamarelag31", "name": "Luva amarela G", "category": "Limpeza", "unit": "un", "min": null}, {"id": "idpazinhassundae1", "name": "Pazinhas Sundae", "category": "Embalagens Cozinha", "unit": "un", "min": null}, {"id": "idpazinhas2", "name": "Pazinhas", "category": "Embalagens Cozinha", "unit": "un", "min": null}, {"id": "idgarfinhos3", "name": "Garfinhos", "category": "Embalagens Cozinha", "unit": "un", "min": null}, {"id": "idcanudomilkshake4", "name": "Canudo milk-shake", "category": "Embalagens Cozinha", "unit": "un", "min": null}, {"id": "idcanudorefrigeran5", "name": "Canudo refrigerante", "category": "Embalagens Cozinha", "unit": "un", "min": null}, {"id": "idcanudobar6", "name": "Canudo bar", "category": "Embalagens Cozinha", "unit": "pacote", "min": null}, {"id": "idcopinhosdegeleia7", "name": "Copinhos de geleia branco", "category": "Embalagens Cozinha", "unit": "un", "min": null}, {"id": "idcopodesundae8", "name": "Copo de Sundae", "category": "Embalagens Cozinha", "unit": "un", "min": null}, {"id": "idembalagemdeliver9", "name": "Embalagem delivery", "category": "Embalagens Cozinha", "unit": "un", "min": null}, {"id": "idembalagemsalaopa10", "name": "Embalagem salão pardo", "category": "Embalagens Cozinha", "unit": "un", "min": null}, {"id": "idcoposalao11", "name": "Copo salão", "category": "Embalagens Cozinha", "unit": "un", "min": null}, {"id": "idcopomilkshake12", "name": "Copo milk-shake", "category": "Embalagens Cozinha", "unit": "un", "min": null}, {"id": "idpapeldebandeja13", "name": "Papel de bandeja", "category": "Embalagens Cozinha", "unit": "un", "min": null}, {"id": "idpapeldaparmegian14", "name": "Papel da parmegiana", "category": "Embalagens Cozinha", "unit": "un", "min": null}, {"id": "idadesivoboca15", "name": "Adesivo boca", "category": "Embalagens Cozinha", "unit": "un", "min": null}, {"id": "idtampabolhamilksh16", "name": "Tampa bolha milk-shake", "category": "Embalagens Cozinha", "unit": "un", "min": null}, {"id": "idembalagemparmegi17", "name": "Embalagem parmegiana", "category": "Embalagens Cozinha", "unit": "un", "min": null}, {"id": "idcaixahamburguer18", "name": "Caixa hambúrguer", "category": "Embalagens", "unit": "un", "min": null}, {"id": "idcaixabatatadeliv19", "name": "Caixa batata delivery", "category": "Embalagens", "unit": "un", "min": null}, {"id": "idcaixadeporcao20", "name": "Caixa de porção", "category": "Embalagens", "unit": "un", "min": null}, {"id": "idkraftp21", "name": "Kraft P", "category": "Embalagens", "unit": "un", "min": null}, {"id": "idkraftm22", "name": "Kraft M", "category": "Embalagens", "unit": "un", "min": null}, {"id": "idkraftgg23", "name": "Kraft GG", "category": "Embalagens", "unit": "un", "min": null}, {"id": "idaperol1", "name": "Aperol", "category": "Bebidas Bar", "unit": "un", "min": null}, {"id": "idwhiskymacaverde2", "name": "Whisky maçã verde", "category": "Bebidas Bar", "unit": "un", "min": null}, {"id": "idlicor433", "name": "Licor 43", "category": "Bebidas Bar", "unit": "un", "min": null}, {"id": "idlicordechocolate4", "name": "Licor de chocolate", "category": "Bebidas Bar", "unit": "un", "min": null}, {"id": "idcachacaprata5", "name": "Cachaça prata", "category": "Bebidas Bar", "unit": "un", "min": null}, {"id": "idcachacaouro6", "name": "Cachaça ouro", "category": "Bebidas Bar", "unit": "un", "min": null}, {"id": "idvodka7", "name": "Vodka", "category": "Bebidas Bar", "unit": "un", "min": null}, {"id": "idcampari8", "name": "Campari", "category": "Bebidas Bar", "unit": "un", "min": null}, {"id": "idmartini9", "name": "Martini", "category": "Bebidas Bar", "unit": "un", "min": null}, {"id": "idbacardi10", "name": "Bacardi", "category": "Bebidas Bar", "unit": "un", "min": null}, {"id": "idgin11", "name": "Gin", "category": "Bebidas Bar", "unit": "un", "min": null}, {"id": "idbrutsaltonseries12", "name": "Brut Salton Series", "category": "Bebidas Bar", "unit": "un", "min": null}, {"id": "idbrutcasaperini13", "name": "Brut Casa Perini", "category": "Bebidas Bar", "unit": "un", "min": null}, {"id": "idmoscatelcasaperi14", "name": "Moscatel Casa Perini", "category": "Bebidas Bar", "unit": "un", "min": null}, {"id": "idpeverellasalvati15", "name": "Peverella Salvati", "category": "Bebidas Bar", "unit": "un", "min": null}, {"id": "idchardonnaymiolor16", "name": "Chardonnay Miolo Reserva", "category": "Bebidas Bar", "unit": "un", "min": null}, {"id": "idrosemiolo17", "name": "Rosé Miolo", "category": "Bebidas Bar", "unit": "un", "min": null}, {"id": "idmerlotsalvati18", "name": "Merlot Salvati", "category": "Bebidas Bar", "unit": "un", "min": null}, {"id": "idjimbeam19", "name": "Jim Beam", "category": "Bebidas Bar", "unit": "un", "min": null}, {"id": "idsucodeuva20", "name": "Suco de uva", "category": "Bebidas Bar", "unit": "un", "min": null}, {"id": "idemustab21", "name": "Emustab", "category": "Bebidas Bar", "unit": "un", "min": null}, {"id": "idangostura22", "name": "Angostura", "category": "Bebidas Bar", "unit": "un", "min": null}, {"id": "idgasparaespuma23", "name": "Gás para espuma", "category": "Bebidas Bar", "unit": "un", "min": null}, {"id": "idmoninlimao24", "name": "Monin Limão", "category": "Bebidas Bar", "unit": "un", "min": null}, {"id": "idmoninmorango25", "name": "Monin Morango", "category": "Bebidas Bar", "unit": "un", "min": null}, {"id": "idmoninmaca26", "name": "Monin Maçã", "category": "Bebidas Bar", "unit": "un", "min": null}, {"id": "idmoninjabuticaba27", "name": "Monin Jabuticaba", "category": "Bebidas Bar", "unit": "un", "min": null}, {"id": "idcafe28", "name": "Café", "category": "Bebidas Bar", "unit": "un", "min": null}, {"id": "iddomecq29", "name": "Domecq", "category": "Bebidas Bar", "unit": "un", "min": null}], "counts": [{"id": "iddomingopassado1", "date": "2026-09-13T21:00:00-03:00", "shiftLabel": "Domingo à noite", "values": {"idalfaceamericana1": 3, "idtomatelongavida2": 3, "idtomateitaliano3": 1, "idrucula4": 1, "idcebola5": 40, "idcebolaroxa6": 1, "idlaranjasuco7": 1, "idlimaotaiti8": 1, "idmorango9": 0, "idtomilho10": 10, "idmanjericao11": 0, "idsalsa12": 0, "idalho13": 2, "idalhoporo14": 4, "idcenoura15": 0, "idovos16": 18, "idoleodesoja17": 6, "idoleodealgodao18": 5, "idgeleiadepimenta19": 9, "idfarinhapanko20": 11, "idfarinhadetrigo21": 2, "idketchup22": 18, "idpicles23": 6, "idmostarda24": 1, "idacucarcristal25": 13, "idsal26": 17, "idsazon27": 23, "idovomaltine28": 4, "idarroz29": 15, "idfeijao30": 8, "idespaguete31": 5, "idfigo32": 8, "idbbq33": 1, "idoregano34": 1, "idketchupsache35": 3, "idleite36": 15, "idamendoim37": 2, "idabacaxi38": 8, "idmisturadeovos39": 4, "idpotedemaionese40": 15, "idcremedeleite41": 24, "idleitedecoco42": 1, "idcoberturadecaram43": 2, "idleitecondensado44": 8, "idnutella45": 4, "idnata300g46": 7, "idmanteiga200g47": 6, "idmilho48": 6, "idbatata49": 64, "idbatatarustica50": 4, "idpaosemgluten51": 72, "idpaodexis53": 0, "idchicken54": 26, "idnuggets55": 6, "idaneisdecebola56": 8, "idqueijogouda57": 27, "idprovoloneempanad58": 160, "idcremeamericano59": 0, "idbasedesorvete60": 5, "idparmegiana61": 40, "idervilha62": 29, "idamora63": 6, "idvegetariano64": 120, "idcarnedehamburgue65": 288, "idcarnemoida66": 60, "idqueijoprovolone67": 6, "idqueijomussarela68": 18, "idbaconfatiado69": 180, "idfarofadebacon70": 22, "idcheddarfatiado71": 68, "idcremedecheddar72": 9, "idpastadealho73": 10, "idgorgonzola74": 2, "idmussarelafatiada75": 2, "idcatupiry76": 1, "idcreamcheese77": 7}}, {"id": "idlimpezainicial1", "date": "2026-09-15T12:00:00-03:00", "shiftLabel": "Cadastro inicial – Limpeza", "values": {"iddetergente5l1": 0, "idalcool705l2": 0, "idaguasanitaria5l3": 0, "iddesinfetante5l4": 0, "idprodutoparachapa5": 0, "idalcalangrill5l6": 0, "idmicrofibramop7": 0, "idfibra8": 0, "idsaboneteespuma5l9": 0, "idrolodepapelhigie10": 0, "idpapeltoalhabanhe11": 0, "idpapeltoalhacozin12": 0, "idguardanaposalao13": 0, "idlixa14": 0, "idsabaoemposemchei15": 0, "idsapolioliquido16": 0, "idgeladesivoparava17": 0, "idluvap18": 0, "idluvam19": 0, "idluvag20": 0, "idesponja21": 0, "idsaco100l22": 0, "idsaco15l23": 0, "idsaco50l24": 0, "idsaco30l25": 0, "idtirapelos26": 0, "idtoucadecabelo27": 0, "idtoucadebarba28": 0, "idescovadeacobroil29": 0, "idluvaamarelam30": 0, "idluvaamarelag31": 0}}, {"id": "idutensembalinicial1", "date": "2026-09-15T12:05:00-03:00", "shiftLabel": "Cadastro inicial – Utensílios e Embalagens", "values": {"idpazinhassundae1": 0, "idpazinhas2": 55, "idgarfinhos3": 3, "idcanudomilkshake4": 0, "idcanudorefrigeran5": 2, "idcanudobar6": 3, "idcopinhosdegeleia7": 8, "idcopodesundae8": 0, "idembalagemdeliver9": 17500, "idembalagemsalaopa10": 17000, "idcoposalao11": 8000, "idcopomilkshake12": 1000, "idpapeldebandeja13": 13000, "idpapeldaparmegian14": 4000, "idadesivoboca15": 3000, "idtampabolhamilksh16": 3150, "idembalagemparmegi17": 100, "idcaixahamburguer18": 1300, "idcaixabatatadeliv19": 4000, "idcaixadeporcao20": 6200, "idkraftp21": 9000, "idkraftm22": 500, "idkraftgg23": 100}}, {"id": "idbar1509", "date": "2026-09-15T21:00:00-03:00", "shiftLabel": "Contagem bar – 15/09", "values": {"idaperol1": 18, "idwhiskymacaverde2": 8, "idlicor433": 1, "idlicordechocolate4": 4, "idcachacaprata5": 8, "idcachacaouro6": 10, "idvodka7": 14, "idcampari8": 5, "idmartini9": 7, "idbacardi10": 5, "idgin11": 4, "idbrutsaltonseries12": 13, "idbrutcasaperini13": 8, "idmoscatelcasaperi14": 9, "idpeverellasalvati15": 0, "idchardonnaymiolor16": 11, "idrosemiolo17": 36, "idmerlotsalvati18": 4, "idjimbeam19": 3, "idsucodeuva20": 7, "idemustab21": 2, "idangostura22": 1, "idgasparaespuma23": 1, "idmoninlimao24": 8, "idmoninmorango25": 5, "idmoninmaca26": 7, "idmoninjabuticaba27": 8, "idcafe28": 2, "iddomecq29": 4}}, {"id": "idlimpeza1509", "date": "2026-09-15T21:30:00-03:00", "shiftLabel": "Contagem limpeza – 15/09", "values": {"iddetergente5l1": 2, "idalcool705l2": 1, "idaguasanitaria5l3": 3, "iddesinfetante5l4": 1, "idprodutoparachapa5": 1, "idalcalangrill5l6": 2, "idmicrofibramop7": 2, "idfibra8": 2, "idsaboneteespuma5l9": 1, "idrolodepapelhigie10": 1, "idpapeltoalhabanhe11": 1, "idpapeltoalhacozin12": 1, "idguardanaposalao13": 2, "idlixa14": 2, "idsabaoemposemchei15": 1, "idsapolioliquido16": 2, "idgeladesivoparava17": 1, "idluvap18": 2, "idluvam19": 0, "idluvag20": 3, "idesponja21": 2, "idsaco100l22": 1, "idsaco15l23": 2, "idsaco50l24": 2, "idsaco30l25": 4, "idtirapelos26": 3, "idtoucadecabelo27": 5, "idtoucadebarba28": 1, "idescovadeacobroil29": 2, "idluvaamarelam30": 1, "idluvaamarelag31": 2}}], "updatedAt": null}</script>
+<script>(function(){
+"use strict";
+
+var MAIN_SCRIPT_SOURCE = document.currentScript ? document.currentScript.textContent : "";
+var SHELL_HEAD = "<!DOCTYPE html>\n<html lang=\"pt-BR\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1\">\n<title>Estoque \u00b7 Vai Mais BG</title>\n<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>\n<link href=\"https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&display=swap\" rel=\"stylesheet\">\n<style>\n  :root{\n    --ink:#1E1B16;\n    --paper:#F7F4EE;\n    --paper-2:#EFEAE0;\n    --yellow:#FFD600;\n    --red:#CC0000;\n    --muted:#8A8177;\n    --line:#DCD5C7;\n    --success:#2F7A4F;\n    --font-head:'Space Grotesk', ui-sans-serif, system-ui, sans-serif;\n    --font-body:'Inter', ui-sans-serif, system-ui, sans-serif;\n  }\n  :root:not([data-theme=\"light\"]){\n    --ink:#1E1B16; --paper:#F7F4EE; --paper-2:#EFEAE0; --line:#DCD5C7; --muted:#8A8177;\n  }\n  @media (prefers-color-scheme: dark){\n    :root:not([data-theme=\"light\"]){\n      --ink:#F2EDE2; --paper:#171410; --paper-2:#211D17; --line:#3A342A; --muted:#9A9285;\n    }\n  }\n  :root[data-theme=\"dark\"]{\n    --ink:#F2EDE2; --paper:#171410; --paper-2:#211D17; --line:#3A342A; --muted:#9A9285;\n  }\n  *{box-sizing:border-box;}\n  html,body{margin:0;padding:0;}\n  body{\n    background:var(--paper);\n    color:var(--ink);\n    font-family:var(--font-body);\n    -webkit-font-smoothing:antialiased;\n    min-height:100vh;\n    padding-bottom:96px;\n  }\n  .wrap{max-width:640px;margin:0 auto;padding:0 16px;}\n  header.top{background:var(--ink);color:var(--paper);padding:22px 16px 20px;}\n  header.top .wrap{display:flex;flex-direction:column;gap:4px;}\n  .brand-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px;}\n  .brand{font-family:var(--font-head);font-weight:700;font-size:22px;letter-spacing:-0.01em;}\n  .brand span{color:var(--yellow);}\n  .datebadge{font-size:12px;color:var(--paper-2);opacity:.75;white-space:nowrap;}\n  .subtitle{font-size:13px;color:var(--paper-2);opacity:.8;margin-top:2px;}\n  .readonly-banner{background:var(--red);color:#fff;font-size:12.5px;padding:8px 16px;text-align:center;}\n  nav.tabs{\n    position:sticky;top:0;z-index:20;\n    display:flex;background:var(--paper);\n    border-bottom:1px solid var(--line);\n  }\n  nav.tabs button{\n    flex:1;padding:12px 4px;background:none;border:none;\n    font-family:var(--font-body);font-weight:600;font-size:13.5px;color:var(--muted);\n    border-bottom:3px solid transparent;cursor:pointer;\n  }\n  nav.tabs button.active{color:var(--ink);border-bottom-color:var(--yellow);}\n  main{padding-top:14px;}\n  section.view{display:none;}\n  section.view.active{display:block;}\n  .shift-label{\n    font-family:var(--font-head);font-weight:700;font-size:15px;color:var(--ink);\n    margin-bottom:6px;\n  }\n  .avulsa-toggle{font-size:12.5px;color:var(--muted);text-decoration:underline;background:none;border:none;cursor:pointer;padding:0 0 16px;font-family:var(--font-body);}\n  .avulsa-input{width:100%;padding:11px;border-radius:10px;border:1px solid var(--line);background:var(--paper-2);color:var(--ink);font-family:var(--font-body);font-size:14px;margin-bottom:16px;display:none;}\n  .cats-toolbar{display:flex;gap:8px;margin-bottom:12px;}\n  .cats-toolbar button{\n    flex:1;padding:9px;border-radius:8px;border:1px solid var(--line);background:var(--paper-2);\n    color:var(--ink);font-family:var(--font-body);font-weight:600;font-size:12.5px;cursor:pointer;\n  }\n  .cat{margin-bottom:14px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--paper-2);}\n  .cat-head{\n    display:flex;align-items:center;justify-content:space-between;\n    padding:10px 14px;background:var(--ink);color:var(--paper);cursor:pointer;\n  }\n  .cat-head .name{font-family:var(--font-head);font-weight:700;font-size:14.5px;}\n  .cat-head .count{font-size:12px;color:var(--yellow);font-weight:600;}\n  .cat-body{padding:2px 0;}\n  .cat.collapsed .cat-body{display:none;}\n  .cat-head .chev{transition:transform .15s ease;color:var(--muted);font-size:12px;}\n  .cat.collapsed .cat-head .chev{transform:rotate(-90deg);}\n  .item-row{\n    display:flex;align-items:center;gap:10px;padding:9px 14px;\n    border-bottom:1px dashed var(--line);\n  }\n  .item-row:last-child{border-bottom:none;}\n  .item-info{flex:1;min-width:0;}\n  .item-name{font-weight:600;font-size:14.5px;}\n  .item-meta{font-size:11.5px;color:var(--muted);margin-top:1px;}\n  .item-meta.low{color:var(--red);font-weight:600;}\n  .qty-compare{display:flex;gap:8px;flex-shrink:0;}\n  .qty-box{width:74px;display:flex;flex-direction:column;align-items:center;}\n  .qty-box-val{\n    width:100%;text-align:center;font-family:var(--font-head);font-weight:700;font-size:14.5px;\n    padding:9px 2px;border:1.5px dashed var(--line);border-radius:8px;background:transparent;color:var(--muted);\n    box-sizing:border-box;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;\n  }\n  .qty-box.qty-current input{\n    width:100%;text-align:center;font-family:var(--font-head);font-weight:700;font-size:17px;\n    padding:9px 2px;border:1.5px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);\n    box-sizing:border-box;-moz-appearance:textfield;\n  }\n  .qty-box.qty-current input:focus{border-color:var(--yellow);outline:none;}\n  .qty-box.qty-current input::-webkit-outer-spin-button,\n  .qty-box.qty-current input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}\n  .qty-box-label{font-size:9.5px;color:var(--muted);margin-top:4px;text-align:center;line-height:1.2;}\n  .footer-bar{\n    position:fixed;left:0;right:0;bottom:0;z-index:30;\n    background:var(--ink);color:var(--paper);\n    padding:12px 16px calc(12px + env(safe-area-inset-bottom));\n    display:flex;align-items:center;gap:12px;\n  }\n  .footer-bar.hidden{display:none;}\n  .footer-bar .progress{font-size:12px;color:var(--paper-2);opacity:.85;flex:1;}\n  .footer-bar .progress b{color:var(--yellow);}\n  .save-btn{\n    background:var(--yellow);color:var(--ink);border:none;border-radius:10px;\n    font-family:var(--font-head);font-weight:700;font-size:14.5px;padding:12px 20px;cursor:pointer;\n  }\n  .save-btn:disabled{opacity:.5;cursor:not-allowed;}\n  .session-card{border:1px solid var(--line);border-radius:12px;background:var(--paper-2);margin-bottom:12px;overflow:hidden;}\n  .session-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer;}\n  .session-head .s-title{font-family:var(--font-head);font-weight:700;font-size:14.5px;}\n  .session-head .s-sub{font-size:11.5px;color:var(--muted);margin-top:2px;}\n  .session-body{display:none;padding:0 14px 10px;}\n  .session-card.open .session-body{display:block;}\n  .session-row{display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px dashed var(--line);}\n  .session-row:last-child{border-bottom:none;}\n  .session-row .v{font-family:var(--font-head);font-weight:700;}\n  .empty-state{text-align:center;padding:40px 20px;color:var(--muted);font-size:14px;line-height:1.6;}\n  .edit-item{\n    display:flex;flex-direction:column;gap:8px;border:1px solid var(--line);\n    border-radius:12px;background:var(--paper-2);padding:12px 14px;margin-bottom:10px;\n  }\n  .edit-row{display:flex;gap:8px;}\n  .edit-row input, .edit-row select{\n    flex:1;min-width:0;padding:9px 10px;border:1px solid var(--line);border-radius:8px;\n    background:var(--paper);color:var(--ink);font-family:var(--font-body);font-size:13.5px;\n  }\n  .edit-row .del{\n    flex:0 0 auto;width:38px;background:var(--paper);border:1px solid var(--line);\n    border-radius:8px;color:var(--red);font-size:16px;cursor:pointer;\n  }\n  .add-item-btn{\n    width:100%;padding:13px;border-radius:10px;border:1.5px dashed var(--line);\n    background:none;color:var(--ink);font-family:var(--font-body);font-weight:600;font-size:14px;\n    cursor:pointer;margin-top:4px;\n  }\n  .items-save-btn{\n    width:100%;padding:14px;border-radius:10px;border:none;background:var(--yellow);color:var(--ink);\n    font-family:var(--font-head);font-weight:700;font-size:14.5px;cursor:pointer;margin:16px 0 28px;\n  }\n  .section-title{font-family:var(--font-head);font-weight:700;font-size:15px;margin:18px 0 10px;}\n  .hint{font-size:12.5px;color:var(--muted);margin-bottom:14px;line-height:1.5;}\n  .toast{\n    position:fixed;left:50%;bottom:78px;transform:translateX(-50%);\n    background:var(--success);color:#fff;padding:10px 18px;border-radius:20px;\n    font-size:13.5px;font-weight:600;z-index:40;opacity:0;pointer-events:none;transition:opacity .2s ease;\n    max-width:88%;text-align:center;\n  }\n  .toast.error{background:var(--red);}\n  .toast.show{opacity:1;}\n</style>\n</head>\n<body>\n\n<header class=\"top\">\n  <div class=\"wrap\">\n    <div class=\"brand-row\">\n      <div class=\"brand\">Estoque <span>Vai Mais BG</span></div>\n      <div class=\"datebadge\" id=\"today-badge\"></div>\n    </div>\n    <div class=\"subtitle\">Contagem de quarta e domingo, direto do celular</div>\n  </div>\n</header>\n\n<div id=\"readonly-banner\" class=\"readonly-banner\" style=\"display:none;\">Modo leitura \u2014 pe\u00e7a acesso de edi\u00e7\u00e3o para salvar altera\u00e7\u00f5es</div>\n\n<nav class=\"tabs\">\n  <button data-tab=\"contagem\" class=\"active\" type=\"button\">Contagem</button>\n  <button data-tab=\"historico\" type=\"button\">Hist\u00f3rico</button>\n  <button data-tab=\"itens\" type=\"button\">Itens</button>\n</nav>\n\n<main class=\"wrap\">\n\n  <section class=\"view active\" id=\"view-contagem\">\n    <div class=\"shift-label\" id=\"shift-label\"></div>\n    <button class=\"avulsa-toggle\" id=\"avulsa-toggle\" type=\"button\">Dar um nome diferente para esta contagem</button>\n    <input class=\"avulsa-input\" id=\"avulsa-input\" type=\"text\" placeholder=\"Ex: confer\u00eancia extra\">\n    <div class=\"cats-toolbar\">\n      <button type=\"button\" id=\"expand-all\">Abrir tudo</button>\n      <button type=\"button\" id=\"collapse-all\">Fechar tudo</button>\n    </div>\n    <div id=\"cats-container\"></div>\n  </section>\n\n  <section class=\"view\" id=\"view-historico\">\n    <div id=\"hist-container\"></div>\n  </section>\n\n  <section class=\"view\" id=\"view-itens\">\n    <div class=\"section-title\">Itens do estoque</div>\n    <p class=\"hint\">Adicione, edite ou remova itens. Defina um m\u00ednimo para receber alerta quando a contagem vier abaixo dele. Lembre de tocar em \"Salvar altera\u00e7\u00f5es\" no final.</p>\n    <div id=\"items-editor\"></div>\n    <button class=\"add-item-btn\" id=\"add-item-btn\" type=\"button\">+ adicionar item</button>\n    <button class=\"items-save-btn\" id=\"items-save-btn\" type=\"button\">Salvar altera\u00e7\u00f5es nos itens</button>\n  </section>\n\n</main>\n\n<div class=\"footer-bar\" id=\"footer-bar\">\n  <div class=\"progress\" id=\"progress-text\"></div>\n  <button class=\"save-btn\" id=\"save-btn\" type=\"button\">Salvar contagem</button>\n</div>\n<div class=\"toast\" id=\"toast\"></div>\n<datalist id=\"unit-options\">\n  <option value=\"kg\"><option value=\"un\"><option value=\"L\"><option value=\"cx\">\n  <option value=\"pacote\"><option value=\"lata\"><option value=\"cartela\"><option value=\"bag\">\n  <option value=\"balde\"><option value=\"pc\">\n</datalist>\n\n";
+var SHELL_TAIL = "\n</body>\n</html>";
+
+var stateEl = document.getElementById('app-state');
+var state = JSON.parse(stateEl.textContent);
+if(!state.items) state.items = [];
+if(!state.counts) state.counts = [];
+
+var UNITS = ["kg","un","l","ml","pacote","cx"];
+var MAX_COUNTS_KEPT = 24;
+
+var artifactCap = null;
+var activeTab = 'contagem';
+var selectedShift = null; // {key:'quarta'|'domingo'|'avulsa', label:string}
+var draftQty = {}; // itemId -> string value, only for current session
+var collapsedCats = {};
+var openSessions = {};
+
+function fmtDateBadge(){
+  try{
+    var d = new Date();
+    var s = d.toLocaleDateString('pt-BR', { weekday:'short', day:'2-digit', month:'short' });
+    return s.charAt(0).toUpperCase() + s.slice(1).replace('.', '');
+  }catch(e){ return ''; }
+}
+
+function fmtDateShort(iso){
+  try{
+    var d = new Date(iso);
+    return d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'2-digit' }) + ' \u00b7 ' +
+      d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+  }catch(e){ return iso; }
+}
+
+function daysAgo(iso){
+  try{
+    var diff = Date.now() - new Date(iso).getTime();
+    var d = Math.floor(diff / 86400000);
+    if(d <= 0) return 'hoje';
+    if(d === 1) return 'ontem';
+    return 'h\u00e1 ' + d + ' dias';
+  }catch(e){ return ''; }
+}
+
+function uid(){
+  return 'id' + Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+}
+
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+
+function toast(msg, isError){
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  clearTimeout(toast._tm);
+  toast._tm = setTimeout(function(){ t.className = 'toast'; }, 2600);
+}
+
+function lastCountFor(itemId){
+  for(var i = state.counts.length - 1; i >= 0; i--){
+    var c = state.counts[i];
+    if(c.values && Object.prototype.hasOwnProperty.call(c.values, itemId)){
+      return { qty: c.values[itemId], date: c.date };
+    }
+  }
+  return null;
+}
+
+function categoriesInOrder(){
+  var seen = [];
+  var seenSet = {};
+  state.items.forEach(function(it){
+    var cat = it.category || 'Outros';
+    if(!seenSet[cat]){ seenSet[cat] = true; seen.push(cat); }
+  });
+  return seen;
+}
+
+// ---------- Capability init ----------
+async function initCapability(){
+  try{
+    if(window.claude && window.claude.use){
+      artifactCap = await window.claude.use('artifact');
+    }
+  }catch(e){
+    artifactCap = null;
+  }
+}
+
+function buildDocument(newState){
+  var stateJson = JSON.stringify(newState).replace(/</g, '\\u003c');
+  return SHELL_HEAD +
+    '<script id="app-state" type="application/json">' + stateJson + '<' + '/script>\n' +
+    '<script>' + MAIN_SCRIPT_SOURCE + '<' + '/script>' +
+    SHELL_TAIL;
+}
+
+async function publish(newState){
+  newState.updatedAt = new Date().toISOString();
+  if(!artifactCap){
+    toast('N\u00e3o foi poss\u00edvel salvar agora. Verifique a conex\u00e3o e tente de novo.', true);
+    return false;
+  }
+  var html = buildDocument(newState);
+  try{
+    await artifactCap.publish(html);
+    state = newState;
+    return true;
+  }catch(e){
+    if(e && (e.code === 'not_granted' || e.code === 'not_writer')){
+      document.getElementById('readonly-banner').style.display = 'block';
+      toast('Voc\u00ea est\u00e1 em modo leitura \u2014 pe\u00e7a acesso de edi\u00e7\u00e3o para salvar.', true);
+    } else {
+      toast('Erro ao salvar. Tente novamente.', true);
+    }
+    return false;
+  }
+}
+
+// ---------- Rendering: tabs ----------
+function switchTab(tab){
+  activeTab = tab;
+  document.querySelectorAll('nav.tabs button').forEach(function(b){
+    b.classList.toggle('active', b.getAttribute('data-tab') === tab);
+  });
+  document.querySelectorAll('section.view').forEach(function(v){
+    v.classList.toggle('active', v.id === 'view-' + tab);
+  });
+  document.getElementById('footer-bar').classList.toggle('hidden', tab !== 'contagem');
+  if(tab === 'historico') renderHistory();
+  if(tab === 'itens') renderItemsEditor();
+  if(tab === 'contagem') renderContagem();
+}
+
+// ---------- Rendering: contagem ----------
+function autoShiftLabel(){
+  var names = ['Domingo \u00e0 noite','Segunda-feira','Ter\u00e7a-feira','Quarta \u00e0 noite','Quinta-feira','Sexta-feira','S\u00e1bado'];
+  return names[new Date().getDay()];
+}
+
+function renderShiftLabel(){
+  var el = document.getElementById('shift-label');
+  if(!selectedShift) selectedShift = { key:'auto', label: autoShiftLabel() };
+  el.textContent = selectedShift.label;
+}
+
+function renderCategories(){
+  var container = document.getElementById('cats-container');
+  if(state.items.length === 0){
+    container.innerHTML = '<div class="empty-state">Nenhum item cadastrado ainda.<br>V\u00e1 em \u201cItens\u201d para adicionar o estoque.</div>';
+    return;
+  }
+  var cats = categoriesInOrder();
+  cats.forEach(function(cat){
+    if(collapsedCats[cat] === undefined) collapsedCats[cat] = true;
+  });
+  container.innerHTML = cats.map(function(cat){
+    var items = state.items.filter(function(it){ return (it.category || 'Outros') === cat; });
+    var collapsed = !!collapsedCats[cat];
+    var filled = items.filter(function(it){ return draftQty[it.id] !== undefined && draftQty[it.id] !== ''; }).length;
+    var rows = items.map(function(it){
+      var last = lastCountFor(it.id);
+      var lastDisplay = last ? (last.qty + ' ' + it.unit) : '\u2014';
+      var val = draftQty[it.id] !== undefined ? draftQty[it.id] : '';
+      var compareVal = val !== '' ? val : (last ? last.qty : '');
+      var basedOnLast = val === '' && !!last;
+      var isLow = it.min !== null && it.min !== undefined && it.min !== '' && compareVal !== '' && Number(compareVal) < Number(it.min);
+      return '' +
+        '<div class="item-row">' +
+          '<div class="item-info">' +
+            '<div class="item-name">' + esc(it.name) + '</div>' +
+            '<div class="item-meta' + (isLow ? ' low' : '') + '">' + (isLow ? 'abaixo do m\u00ednimo (' + it.min + ' ' + esc(it.unit) + ')' + (basedOnLast ? ' \u2014 \u00faltima contagem' : '') : (last ? daysAgo(last.date) : 'sem contagem anterior')) + '</div>' +
+          '</div>' +
+          '<div class="qty-compare">' +
+            '<div class="qty-box qty-last">' +
+              '<div class="qty-box-val">' + esc(lastDisplay) + '</div>' +
+              '<div class="qty-box-label">\u00faltima contagem</div>' +
+            '</div>' +
+            '<div class="qty-box qty-current">' +
+              '<input type="number" inputmode="decimal" step="any" min="0" placeholder="0" data-id="' + it.id + '" value="' + esc(val) + '">' +
+              '<div class="qty-box-label">contagem atual</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+    }).join('');
+    return '' +
+      '<div class="cat' + (collapsed ? ' collapsed' : '') + '" data-cat="' + esc(cat) + '">' +
+        '<div class="cat-head">' +
+          '<span class="name">' + esc(cat) + '</span>' +
+          '<span style="display:flex;align-items:center;gap:8px;">' +
+            '<span class="count">' + filled + '/' + items.length + '</span>' +
+            '<span class="chev">\u25be</span>' +
+          '</span>' +
+        '</div>' +
+        '<div class="cat-body">' + rows + '</div>' +
+      '</div>';
+  }).join('');
+
+  container.querySelectorAll('.cat-head').forEach(function(h){
+    h.addEventListener('click', function(){
+      var cat = h.parentElement.getAttribute('data-cat');
+      collapsedCats[cat] = !collapsedCats[cat];
+      renderCategories();
+    });
+  });
+  container.querySelectorAll('.qty-current input').forEach(function(inp){
+    inp.addEventListener('input', function(){
+      var id = inp.getAttribute('data-id');
+      draftQty[id] = inp.value.replace(',', '.');
+      updateProgress();
+      var row = inp.closest('.item-row');
+      var metaEl = row.querySelector('.item-meta');
+      var it = state.items.filter(function(x){ return x.id === id; })[0];
+      var last = lastCountFor(id);
+      var compareVal = draftQty[id] !== '' ? draftQty[id] : (last ? last.qty : '');
+      var basedOnLast = draftQty[id] === '' && !!last;
+      if(it && it.min !== null && it.min !== undefined && it.min !== '' && compareVal !== '' && Number(compareVal) < Number(it.min)){
+        metaEl.classList.add('low');
+        metaEl.textContent = 'abaixo do m\u00ednimo (' + it.min + ' ' + it.unit + ')' + (basedOnLast ? ' \u2014 \u00faltima contagem' : '');
+      } else {
+        metaEl.classList.remove('low');
+        metaEl.textContent = last ? daysAgo(last.date) : 'sem contagem anterior';
+      }
+      var catEl = row.closest('.cat');
+      var catName = catEl.getAttribute('data-cat');
+      var itemsInCat = state.items.filter(function(x){ return (x.category || 'Outros') === catName; });
+      var filled = itemsInCat.filter(function(x){ return draftQty[x.id] !== undefined && draftQty[x.id] !== ''; }).length;
+      catEl.querySelector('.count').textContent = filled + '/' + itemsInCat.length;
+    });
+  });
+}
+
+function updateProgress(){
+  var total = state.items.length;
+  var filled = state.items.filter(function(it){ return draftQty[it.id] !== undefined && draftQty[it.id] !== ''; }).length;
+  document.getElementById('progress-text').innerHTML = '<b>' + filled + '</b> de ' + total + ' itens contados';
+  var saveBtn = document.getElementById('save-btn');
+  saveBtn.disabled = total === 0;
+}
+
+function renderContagem(){
+  document.getElementById('today-badge').textContent = fmtDateBadge();
+  renderShiftLabel();
+  renderCategories();
+  updateProgress();
+}
+
+async function handleSave(){
+  var total = state.items.length;
+  var filled = state.items.filter(function(it){ return draftQty[it.id] !== undefined && draftQty[it.id] !== ''; }).length;
+  if(filled < total){
+    var missing = total - filled;
+    var ok = confirm(missing + ' item(ns) sem contagem. Salvar mesmo assim?');
+    if(!ok) return;
+  }
+  var values = {};
+  state.items.forEach(function(it){
+    if(draftQty[it.id] !== undefined && draftQty[it.id] !== '' && !isNaN(Number(draftQty[it.id]))){
+      values[it.id] = Number(draftQty[it.id]);
+    }
+  });
+  var label = selectedShift.label;
+  var customName = document.getElementById('avulsa-input').value.trim();
+  if(customName) label = customName;
+  var entry = { id: uid(), date: new Date().toISOString(), shiftLabel: label, values: values };
+  var newCounts = state.counts.concat([entry]);
+  if(newCounts.length > MAX_COUNTS_KEPT) newCounts = newCounts.slice(newCounts.length - MAX_COUNTS_KEPT);
+  var newState = Object.assign({}, state, { counts: newCounts });
+  var saveBtn = document.getElementById('save-btn');
+  saveBtn.disabled = true;
+  var ok2 = await publish(newState);
+  saveBtn.disabled = false;
+  if(ok2){
+    draftQty = {};
+    toast('Contagem salva com sucesso.');
+    renderContagem();
+  }
+}
+
+// ---------- Rendering: historico ----------
+function renderHistory(){
+  var container = document.getElementById('hist-container');
+  if(state.counts.length === 0){
+    container.innerHTML = '<div class="empty-state">Nenhuma contagem registrada ainda.</div>';
+    return;
+  }
+  var itemById = {};
+  state.items.forEach(function(it){ itemById[it.id] = it; });
+  var sorted = state.counts.slice().reverse();
+  container.innerHTML = sorted.map(function(c){
+    var open = !!openSessions[c.id];
+    var count = Object.keys(c.values || {}).length;
+    var rows = Object.keys(c.values || {}).map(function(itemId){
+      var it = itemById[itemId];
+      var name = it ? it.name : '(item removido)';
+      var unit = it ? it.unit : '';
+      return '<div class="session-row"><span>' + esc(name) + '</span><span class="v">' + c.values[itemId] + ' ' + esc(unit) + '</span></div>';
+    }).join('');
+    return '' +
+      '<div class="session-card' + (open ? ' open' : '') + '" data-id="' + c.id + '">' +
+        '<div class="session-head">' +
+          '<div><div class="s-title">' + esc(c.shiftLabel) + '</div><div class="s-sub">' + fmtDateShort(c.date) + ' \u00b7 ' + count + ' itens</div></div>' +
+          '<span class="chev">\u25be</span>' +
+        '</div>' +
+        '<div class="session-body">' + rows + '</div>' +
+      '</div>';
+  }).join('');
+  container.querySelectorAll('.session-head').forEach(function(h){
+    h.addEventListener('click', function(){
+      var id = h.parentElement.getAttribute('data-id');
+      openSessions[id] = !openSessions[id];
+      renderHistory();
+    });
+  });
+}
+
+// ---------- Rendering: itens editor ----------
+var editDraft = null; // local working copy of items while editing
+
+function renderItemsEditor(){
+  if(editDraft === null){
+    editDraft = state.items.map(function(it){ return Object.assign({}, it); });
+  }
+  var container = document.getElementById('items-editor');
+  if(editDraft.length === 0){
+    container.innerHTML = '<div class="empty-state">Nenhum item ainda. Toque em \u201c+ adicionar item\u201d abaixo.</div>';
+  } else {
+    container.innerHTML = editDraft.map(function(it, idx){
+      return '' +
+        '<div class="edit-item" data-idx="' + idx + '">' +
+          '<div class="edit-row">' +
+            '<input type="text" class="f-name" placeholder="Nome do item" value="' + esc(it.name) + '">' +
+            '<button type="button" class="del" data-idx="' + idx + '">\u00d7</button>' +
+          '</div>' +
+          '<div class="edit-row">' +
+            '<input type="text" class="f-cat" placeholder="Categoria" value="' + esc(it.category || '') + '">' +
+            '<input type="text" class="f-unit" list="unit-options" placeholder="Unidade" value="' + esc(it.unit || '') + '">' +
+            '<input type="text" inputmode="decimal" class="f-min" placeholder="M\u00ednimo" value="' + esc(it.min == null ? '' : it.min) + '">' +
+          '</div>' +
+        '</div>';
+    }).join('');
+  }
+
+  container.querySelectorAll('.f-name').forEach(function(inp, i){
+    inp.addEventListener('input', function(){ editDraft[i].name = inp.value; });
+  });
+  container.querySelectorAll('.f-cat').forEach(function(inp, i){
+    inp.addEventListener('input', function(){ editDraft[i].category = inp.value; });
+  });
+  container.querySelectorAll('.f-unit').forEach(function(inp, i){
+    inp.addEventListener('input', function(){ editDraft[i].unit = inp.value; });
+  });
+  container.querySelectorAll('.f-min').forEach(function(inp, i){
+    inp.addEventListener('input', function(){ editDraft[i].min = inp.value.replace(',', '.'); });
+  });
+  container.querySelectorAll('.del').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var idx = Number(btn.getAttribute('data-idx'));
+      if(confirm('Remover "' + (editDraft[idx].name || 'este item') + '"?')){
+        editDraft.splice(idx, 1);
+        renderItemsEditor();
+      }
+    });
+  });
+}
+
+function addItemRow(){
+  if(editDraft === null) editDraft = state.items.map(function(it){ return Object.assign({}, it); });
+  editDraft.push({ id: uid(), name: '', category: '', unit: 'un', min: '' });
+  renderItemsEditor();
+  var rows = document.querySelectorAll('#items-editor .edit-item');
+  var last = rows[rows.length - 1];
+  if(last){ last.scrollIntoView({ behavior:'smooth', block:'center' }); var nm = last.querySelector('.f-name'); if(nm) nm.focus(); }
+}
+
+async function handleSaveItems(){
+  var cleaned = editDraft
+    .filter(function(it){ return it.name && it.name.trim() !== ''; })
+    .map(function(it){
+      return {
+        id: it.id,
+        name: it.name.trim(),
+        category: (it.category || 'Outros').trim() || 'Outros',
+        unit: it.unit || 'un',
+        min: (it.min === '' || it.min === undefined || it.min === null || isNaN(Number(it.min))) ? null : Number(it.min)
+      };
+    });
+  var newState = Object.assign({}, state, { items: cleaned });
+  var btn = document.getElementById('items-save-btn');
+  btn.disabled = true;
+  var ok = await publish(newState);
+  btn.disabled = false;
+  if(ok){
+    editDraft = null;
+    toast('Itens atualizados.');
+    renderItemsEditor();
+  }
+}
+
+// ---------- Init ----------
+function attachStaticHandlers(){
+  document.querySelectorAll('nav.tabs button').forEach(function(b){
+    b.addEventListener('click', function(){ switchTab(b.getAttribute('data-tab')); });
+  });
+  document.getElementById('save-btn').addEventListener('click', handleSave);
+  document.getElementById('add-item-btn').addEventListener('click', addItemRow);
+  document.getElementById('items-save-btn').addEventListener('click', handleSaveItems);
+  document.getElementById('avulsa-toggle').addEventListener('click', function(){
+    var inp = document.getElementById('avulsa-input');
+    var showing = inp.style.display === 'block';
+    inp.style.display = showing ? 'none' : 'block';
+    if(!showing){ inp.focus(); } else { inp.value = ''; }
+  });
+  document.getElementById('expand-all').addEventListener('click', function(){
+    categoriesInOrder().forEach(function(cat){ collapsedCats[cat] = false; });
+    renderCategories();
+  });
+  document.getElementById('collapse-all').addEventListener('click', function(){
+    categoriesInOrder().forEach(function(cat){ collapsedCats[cat] = true; });
+    renderCategories();
+  });
+}
+
+async function init(){
+  attachStaticHandlers();
+  await initCapability();
+  renderContagem();
+}
+
+init();
+
+})();
+</script>
+</body>
+</html>
