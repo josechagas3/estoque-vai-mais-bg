@@ -14,12 +14,12 @@ export async function GET() {
 export async function POST(request: Request) {
   const body = await request.json() as { name?: string; username?: string; password?: string }
   const name = body.name?.trim(); const username = body.username?.trim().toLowerCase(); const password = body.password ?? ''
-  if (!name || !username || password.length < 3 || !/^[a-z0-9._-]+$/.test(username)) return NextResponse.json({ error: 'Preencha nome, usuário válido e senha com pelo menos 3 caracteres.' }, { status: 400 })
+  if (!name || !username || password.length < 6 || !/^[a-z0-9._-]+$/.test(username)) return NextResponse.json({ error: 'Preencha nome, usuário válido e senha com pelo menos 6 caracteres.' }, { status: 400 })
   const supabase = admin()
   const auth = await supabase.auth.admin.createUser({ email: emailFor(username), password, email_confirm: true, user_metadata: { display_name: name, username } })
-  if (auth.error || !auth.data.user) return NextResponse.json({ error: 'Não foi possível criar este usuário.' }, { status: 400 })
+  if (auth.error || !auth.data.user) return NextResponse.json({ error: `Supabase Auth: ${auth.error?.message ?? 'Usuário não retornado.'}` }, { status: 400 })
   const { data, error } = await supabase.from('stock_users').insert({ id: crypto.randomUUID(), auth_user_id: auth.data.user.id, name, username, active: true }).select('id,name,username,active,auth_user_id').single()
-  if (error) { await supabase.auth.admin.deleteUser(auth.data.user.id); return NextResponse.json({ error: 'Nome de usuário já cadastrado.' }, { status: 409 }) }
+  if (error) { await supabase.auth.admin.deleteUser(auth.data.user.id); return NextResponse.json({ error: `Supabase Database: ${error.message} (${error.code ?? 'sem código'})` }, { status: 409 }) }
   return NextResponse.json(data)
 }
 
