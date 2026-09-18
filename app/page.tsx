@@ -69,7 +69,7 @@ export default function Page() {
     const supabase = createClient()
     void Promise.all([
       supabase.from('stock_products').select('id,name,category,unit,current_quantity,minimum_quantity,ideal_quantity').order('name'),
-      supabase.from('stock_movements').select('id,product_id,movement_type,quantity,movement_date,user_id,notes').order('movement_date', { ascending: true }),
+      supabase.from('stock_movements').select('id,product_id,movement_type,quantity,movement_date,user_id,usuario_id,notes').order('movement_date', { ascending: true }),
       supabase.from('stock_users').select('id,name,username,active,auth_user_id').eq('active', true).order('name'),
       supabase.from('pedidos_compra').select('id,data_criacao,status').order('data_criacao', { ascending: false }),
     ]).then(async ([productResult, movementResult, usersResult, orderResult]) => {
@@ -109,6 +109,7 @@ export default function Page() {
   const visibleMovements = movements.filter((m) => historyFilter === 'Todos' || m.type === historyFilter).slice().reverse()
 
   async function registerMovement(type: 'Entrada' | 'Saída') {
+    if (!authUser) return setToast('Faça login para registrar movimentações.')
     const amount = Number(quantity)
     const product = products.find((p) => p.id === selectedProduct)
     if (!product || !Number.isInteger(amount) || amount <= 0) return setToast('Informe um produto e uma quantidade válida.')
@@ -117,7 +118,7 @@ export default function Page() {
     const nextQuantity = type === 'Entrada' ? product.current + amount : product.current - amount
     const movementId = crypto.randomUUID()
     const movementDate = today()
-    const { error: movementError } = await supabase.from('stock_movements').insert({ id: movementId, product_id: product.id, movement_type: type, quantity: amount, movement_date: movementDate, user_id: currentUserId || null })
+    const { error: movementError } = await supabase.from('stock_movements').insert({ id: movementId, product_id: product.id, movement_type: type, quantity: amount, movement_date: movementDate, user_id: authUser.recordId, usuario_id: authUser.id })
     if (movementError) {
       console.error('[v0] Erro ao inserir movimentação:', movementError)
       return setToast(`Erro ao salvar movimentação: ${movementError.message}`)
@@ -129,7 +130,7 @@ export default function Page() {
       return setToast(`Erro ao atualizar estoque: ${productError.message}`)
     }
     setProducts((current) => current.map((p) => p.id === product.id ? { ...p, current: nextQuantity } : p))
-    setMovements((current) => [...current, { id: movementId, productId: product.id, type, quantity: amount, date: movementDate }])
+    setMovements((current) => [...current, { id: movementId, productId: product.id, type, quantity: amount, date: movementDate, userId: authUser.recordId }])
     setQuantity(''); setSelectedProduct(''); setQuickActionProduct(null); setToast(`${type} registrada para ${product.name}.`)
   }
   async function saveProduct() { if (!editing?.name.trim()) return; const supabase = createClient(); const payload = { id: editing.id, name: editing.name.trim(), category: editing.category, unit: editing.unit.trim(), current_quantity: editing.current, minimum_quantity: editing.minimum, ideal_quantity: editing.ideal, updated_at: today() }; const { error } = await supabase.from('stock_products').upsert(payload); if (error) return setToast('Não foi possível salvar o produto.'); setProducts((current) => current.some((p) => p.id === editing.id) ? current.map((p) => p.id === editing.id ? editing : p) : [...current, editing]); setEditing(null); setToast('Produto atualizado com sucesso') }
