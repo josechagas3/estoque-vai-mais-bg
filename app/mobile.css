@@ -38,6 +38,24 @@
 @media (display-mode: standalone) {
   .topbar { padding-top: calc(16px + env(safe-area-inset-top)); }
 }
+
+@media (max-width: 560px) {
+  body { padding-bottom: 0; }
+  .topbar { position: sticky; top: 0; z-index: 60; min-height: 64px; padding: calc(12px + env(safe-area-inset-top)) 16px 12px; }
+  .topbar .brand { font-size: 16px; }
+  .topbar .top-date { display: none; }
+  .menu-button { display: grid; place-items: center; z-index: 2; width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper-2); color: var(--ink); }
+  .drawer-scrim { position: fixed; inset: 0; z-index: 70; border: 0; background: rgba(30, 27, 22, .42); }
+  .nav, .nav.open { display: flex !important; position: fixed; z-index: 80; inset: 0 auto 0 0; width: min(84vw, 320px); height: 100dvh; padding: calc(88px + env(safe-area-inset-top)) 14px calc(20px + env(safe-area-inset-bottom)); flex-direction: column; align-items: stretch; gap: 6px; overflow-y: auto; overflow-x: hidden; border: 0; border-right: 1px solid var(--line); border-radius: 0 18px 18px 0; background: var(--paper); box-shadow: 18px 0 45px rgba(30, 27, 22, .18); transform: translateX(-105%); transition: transform .22s ease; }
+  .app-shell > .nav.open { z-index: 80 !important; position: fixed !important; transform: translateX(0); }
+  .nav button { flex: 0 0 54px !important; width: 100%; min-width: 0; min-height: 54px; height: 54px; padding: 12px 14px; flex-direction: row; justify-content: flex-start; align-items: center; gap: 13px; border-radius: 10px; font-size: 14px; text-align: left; white-space: normal; scroll-snap-align: none; }
+  .nav button svg { width: 20px; height: 20px; flex: 0 0 20px; }
+  .nav button.active { background: var(--ink); color: var(--paper) !important; }
+}
+
+@media (min-width: 561px) {
+  .drawer-scrim { display: none; }
+}
 .category-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 18px 0; }
 .category-card { min-height: 108px; padding: 15px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper-2); color: var(--ink); text-align: left; display: flex; flex-direction: column; gap: 9px; position: relative; transition: border-color .2s, transform .2s; }
 .category-card:hover, .category-card.selected { border-color: var(--ink); transform: translateY(-1px); }
