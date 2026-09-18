@@ -38,6 +38,7 @@ export default function Page() {
   const [historyFilter, setHistoryFilter] = useState('Todos')
 
   useEffect(() => {
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => undefined)
     const saved = localStorage.getItem('vai-mais-bg-stock-v2')
     if (saved) { const parsed = JSON.parse(saved); setProducts(parsed.products ?? initialProducts); setMovements(parsed.movements ?? []) }
   }, [])

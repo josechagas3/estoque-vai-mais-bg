@@ -1,0 +1,34 @@
+/* Estilos de suporte para a navegação instalada no iPhone. */
+@media (max-width: 560px) {
+  html { min-height: 100%; }
+  body { padding-bottom: calc(76px + env(safe-area-inset-bottom)); overflow-x: hidden; }
+  .app-shell { width: 100%; }
+  .topbar { padding-top: calc(16px + env(safe-area-inset-top)); }
+  .content { padding: 20px 14px calc(88px + env(safe-area-inset-bottom)); }
+  .nav {
+    position: fixed;
+    inset: auto 0 0;
+    height: calc(64px + env(safe-area-inset-bottom));
+    padding: 4px 4px env(safe-area-inset-bottom);
+    border-top: 1px solid var(--line);
+    border-bottom: 0;
+    box-shadow: 0 -8px 24px rgba(30, 27, 22, .08);
+    overflow-x: auto;
+    background: color-mix(in srgb, var(--paper) 94%, transparent);
+    backdrop-filter: blur(14px);
+  }
+  .nav button { min-width: 88px; min-height: 58px; padding: 7px 4px; flex-direction: column; gap: 4px; font-size: 10px; }
+  .nav button svg { width: 19px; height: 19px; }
+  .page-title { align-items: flex-start; }
+  .page-title h1 { font-size: 22px; }
+  .primary, .submit-large { min-height: 48px; }
+  .movement-form { padding: 16px; }
+  .movement-form select, .movement-form input, .modal input, .modal select { min-height: 50px; font-size: 16px; }
+  .submit-large { font-size: 15px; }
+  .stats button { min-height: 124px; }
+  .modal-backdrop { align-items: flex-end; }
+  .modal { max-height: 90svh; overflow-y: auto; border-radius: 18px 18px 0 0; padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
+}
+@media (display-mode: standalone) {
+  .topbar { padding-top: calc(16px + env(safe-area-inset-top)); }
+}
