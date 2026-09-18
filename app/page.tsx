@@ -9,7 +9,7 @@ type Movement = { id: string; productId: string; type: 'Entrada' | 'Saída'; qua
 type PurchaseItem = { id: string; productId: string; quantity: number }
 type PurchaseOrder = { id: string; createdAt: string; status: 'criado' | 'recebido' | 'cancelado'; items: PurchaseItem[] }
 
-const categories = ['Saladas e Frutas', 'Mercearia e Secos', 'Congelados e Prontos', 'Carnes e Laticínios', 'Limpeza', 'Embalagens', 'Bebidas Bar']
+const categories = ['Saladas e Frutas', 'Mercearia e Secos', 'Congelados e Prontos', 'Carnes e Laticínios', 'Limpeza', 'Embalagens', 'Bebidas Bar', 'Bebidas Salão']
 const initialProducts: Product[] = [
   { id: 'idalfaceamericana1', name: 'Alface americana', category: 'Saladas e Frutas', unit: 'cx', current: 12, minimum: 4, ideal: 20 },
   { id: 'idtomatelongavida2', name: 'Tomate longa vida', category: 'Saladas e Frutas', unit: 'cx', current: 8, minimum: 3, ideal: 15 },
