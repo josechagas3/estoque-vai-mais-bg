@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { AlertTriangle, ArrowDownToLine, ArrowUpFromLine, ClipboardList, LayoutDashboard, Menu, Package, Plus, Search, Trash2, X } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 type Product = { id: string; name: string; category: string; unit: string; current: number; minimum: number; ideal: number }
 type Movement = { id: string; productId: string; type: 'Entrada' | 'Saída'; quantity: number; date: string }
@@ -39,10 +40,22 @@ export default function Page() {
 
   useEffect(() => {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => undefined)
-    const saved = localStorage.getItem('vai-mais-bg-stock-v2')
-    if (saved) { const parsed = JSON.parse(saved); setProducts(parsed.products ?? initialProducts); setMovements(parsed.movements ?? []) }
+    const supabase = createClient()
+    void Promise.all([
+      supabase.from('stock_products').select('id,name,category,unit,current_quantity,minimum_quantity,ideal_quantity').order('name'),
+      supabase.from('stock_movements').select('id,product_id,movement_type,quantity,movement_date').order('movement_date', { ascending: true }),
+    ]).then(([productResult, movementResult]) => {
+      if (productResult.error || movementResult.error) return
+      const databaseProducts = productResult.data ?? []
+      if (!databaseProducts.length) {
+        void supabase.from('stock_products').upsert(initialProducts.map((p) => ({ id: p.id, name: p.name, category: p.category, unit: p.unit, current_quantity: p.current, minimum_quantity: p.minimum, ideal_quantity: p.ideal })))
+        setProducts(initialProducts)
+      } else {
+        setProducts(databaseProducts.map((p) => ({ id: p.id, name: p.name, category: p.category, unit: p.unit, current: p.current_quantity, minimum: p.minimum_quantity, ideal: p.ideal_quantity })))
+      }
+      setMovements((movementResult.data ?? []).map((m) => ({ id: m.id, productId: m.product_id, type: m.movement_type as Movement['type'], quantity: m.quantity, date: m.movement_date })))
+    })
   }, [])
-  useEffect(() => { localStorage.setItem('vai-mais-bg-stock-v2', JSON.stringify({ products, movements })) }, [products, movements])
   useEffect(() => { if (toast) { const t = setTimeout(() => setToast(''), 2600); return () => clearTimeout(t) } }, [toast])
 
   const lowStock = products.filter((p) => p.current <= p.minimum)
@@ -50,17 +63,23 @@ export default function Page() {
   const filteredProducts = products.filter((p) => p.name.toLowerCase().includes(query.toLowerCase()))
   const visibleMovements = movements.filter((m) => historyFilter === 'Todos' || m.type === historyFilter).slice().reverse()
 
-  function registerMovement(type: 'Entrada' | 'Saída') {
+  async function registerMovement(type: 'Entrada' | 'Saída') {
     const amount = Number(quantity)
     const product = products.find((p) => p.id === selectedProduct)
     if (!product || !Number.isInteger(amount) || amount <= 0) return setToast('Informe um produto e uma quantidade válida.')
     if (type === 'Saída' && amount > product.current) return setToast('A saída não pode deixar o estoque negativo.')
-    setProducts((current) => current.map((p) => p.id === product.id ? { ...p, current: type === 'Entrada' ? p.current + amount : p.current - amount } : p))
-    setMovements((current) => [...current, { id: crypto.randomUUID(), productId: product.id, type, quantity: amount, date: today() }])
+    const supabase = createClient()
+    const nextQuantity = type === 'Entrada' ? product.current + amount : product.current - amount
+    const movementId = crypto.randomUUID()
+    const { error: movementError } = await supabase.from('stock_movements').insert({ id: movementId, product_id: product.id, movement_type: type, quantity: amount, movement_date: today() })
+    const { error: productError } = await supabase.from('stock_products').update({ current_quantity: nextQuantity, updated_at: today() }).eq('id', product.id)
+    if (movementError || productError) return setToast('Não foi possível salvar a movimentação.')
+    setProducts((current) => current.map((p) => p.id === product.id ? { ...p, current: nextQuantity } : p))
+    setMovements((current) => [...current, { id: movementId, productId: product.id, type, quantity: amount, date: today() }])
     setQuantity(''); setSelectedProduct(''); setToast(`${type} registrada para ${product.name}.`)
   }
-  function saveProduct() { if (!editing?.name.trim()) return; setProducts((current) => current.some((p) => p.id === editing.id) ? current.map((p) => p.id === editing.id ? editing : p) : [...current, editing]); setEditing(null); setToast('Produto salvo.') }
-  function removeProduct(id: string) { setProducts((current) => current.filter((p) => p.id !== id)); setToast('Produto removido.') }
+  async function saveProduct() { if (!editing?.name.trim()) return; const supabase = createClient(); const payload = { id: editing.id, name: editing.name.trim(), category: editing.category, unit: editing.unit.trim(), current_quantity: editing.current, minimum_quantity: editing.minimum, ideal_quantity: editing.ideal, updated_at: today() }; const { error } = await supabase.from('stock_products').upsert(payload); if (error) return setToast('Não foi possível salvar o produto.'); setProducts((current) => current.some((p) => p.id === editing.id) ? current.map((p) => p.id === editing.id ? editing : p) : [...current, editing]); setEditing(null); setToast('Produto salvo.') }
+  async function removeProduct(id: string) { const { error } = await createClient().from('stock_products').delete().eq('id', id); if (error) return setToast('Não foi possível remover o produto.'); setProducts((current) => current.filter((p) => p.id !== id)); setMovements((current) => current.filter((m) => m.productId !== id)); setToast('Produto removido.') }
   function go(viewName: string) { setView(viewName); setMenuOpen(false) }
 
   return <div className="app-shell">
