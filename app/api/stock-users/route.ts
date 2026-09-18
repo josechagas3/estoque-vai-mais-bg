@@ -23,6 +23,20 @@ export async function POST(request: Request) {
   return NextResponse.json(data)
 }
 
+export async function DELETE(request: Request) {
+  const body = await request.json() as { id?: string; auth_user_id?: string }
+  if (!body.id || !body.auth_user_id) return NextResponse.json({ error: 'Usuário inválido.' }, { status: 400 })
+  const supabase = admin()
+  const { count, error: countError } = await supabase.from('stock_users').select('id', { count: 'exact', head: true }).eq('active', true)
+  if (countError) return NextResponse.json({ error: 'Não foi possível verificar os usuários.' }, { status: 500 })
+  if ((count ?? 0) <= 1) return NextResponse.json({ error: 'Não é possível excluir o último usuário do sistema.' }, { status: 409 })
+  const { error: authError } = await supabase.auth.admin.deleteUser(body.auth_user_id)
+  if (authError) return NextResponse.json({ error: 'Não foi possível excluir o acesso do usuário.' }, { status: 400 })
+  const { error } = await supabase.from('stock_users').delete().eq('id', body.id)
+  if (error) return NextResponse.json({ error: 'Não foi possível remover o cadastro do usuário.' }, { status: 500 })
+  return NextResponse.json({ ok: true })
+}
+
 export async function PATCH(request: Request) {
   const body = await request.json() as { id?: string; name?: string; username?: string; password?: string; auth_user_id?: string }
   if (!body.id || !body.name?.trim() || !body.username?.trim()) return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 })
