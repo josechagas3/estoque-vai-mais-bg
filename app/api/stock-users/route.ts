@@ -8,17 +8,7 @@ export async function GET() {
   const supabase = admin()
   const { data: users, error } = await supabase.from('stock_users').select('id,name,username,active,auth_user_id').eq('active', true).order('name')
   if (error) return NextResponse.json({ error: 'Não foi possível carregar os usuários.' }, { status: 500 })
-  const joseRow = (users ?? []).find((user) => user.username === 'jose' || user.name === 'José')
-  if (joseRow && joseRow.username !== 'jose') {
-    const listed = await supabase.auth.admin.listUsers({ perPage: 100 }); const existing = listed.data.users.find((user) => user.email === emailFor('jose'))
-    const auth = existing ? { data: { user: existing } } : await supabase.auth.admin.createUser({ email: emailFor('jose'), password: '123', email_confirm: true, user_metadata: { display_name: 'José', username: 'jose' } })
-    if (auth.data.user) await supabase.from('stock_users').update({ username: 'jose', auth_user_id: auth.data.user.id }).eq('id', joseRow.id)
-  } else if (!joseRow) {
-    const auth = await supabase.auth.admin.createUser({ email: emailFor('jose'), password: '123', email_confirm: true, user_metadata: { display_name: 'José', username: 'jose' } })
-    if (auth.data.user) await supabase.from('stock_users').insert({ id: crypto.randomUUID(), auth_user_id: auth.data.user.id, name: 'José', username: 'jose', active: true })
-  }
-  const refreshed = await supabase.from('stock_users').select('id,name,username,active,auth_user_id').eq('active', true).order('name')
-  return NextResponse.json(refreshed.data ?? [])
+  return NextResponse.json(users ?? [])
 }
 
 export async function POST(request: Request) {
