@@ -50,6 +50,15 @@ export default function Page() {
   const [purchaseQuantities, setPurchaseQuantities] = useState<Record<string, number>>({})
   const [purchaseCategory, setPurchaseCategory] = useState('Todas as categorias')
   const [purchaseDays, setPurchaseDays] = useState<number[]>([1, 4])
+  const [authUser, setAuthUser] = useState<{ email?: string } | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
+
+  useEffect(() => {
+    const supabase = createClient()
+    void supabase.auth.getUser().then(({ data }) => { setAuthUser(data.user ? { email: data.user.email } : null); setAuthLoading(false) })
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => setAuthUser(session?.user ? { email: session.user.email } : null))
+    return () => listener.subscription.unsubscribe()
+  }, [])
 
   useEffect(() => {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => undefined)
@@ -138,8 +147,11 @@ export default function Page() {
   }
   function go(viewName: string, category?: string) { setView(viewName); if (viewName === 'products' && category) setProductsCategory(category); if (viewName === 'entry') { setSelectedCategory(category ?? ''); setSelectedProduct(''); setQuantity(''); setQuickActionProduct(null) } setMenuOpen(false) }
 
+  if (authLoading) return <div className="auth-loading">Carregando sessão…</div>
+  if (!authUser) return <LoginScreen onLogin={setAuthUser} />
+
   return <div className="app-shell">
-    <header className="topbar"><div className="brand">Estoque <span>Vai Mais BG</span></div><button className="menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'} aria-expanded={menuOpen}><Menu size={22} /></button><div className="top-date">{new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}</div></header>
+    <header className="topbar"><div className="brand">Estoque <span>Vai Mais BG</span></div><button className="menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'} aria-expanded={menuOpen}><Menu size={22} /></button><div className="top-date">{new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}</div><button className="logout-button" onClick={() => void createClient().auth.signOut()}>Sair</button></header>
     {menuOpen && <button className="drawer-scrim" aria-label="Fechar menu" onClick={() => setMenuOpen(false)} />}
     <nav className={`nav ${menuOpen ? 'open' : ''}`} aria-label="Navegação principal">{[['dashboard', 'Dashboard', LayoutDashboard], ['products', 'Produtos', Package], ['entry', 'Entrada de estoque', ArrowDownToLine], ['exit', 'Registrar saída', ArrowUpFromLine], ['history', 'Histórico', ClipboardList], ['purchase', 'Lista de compras', AlertTriangle], ['orders', 'Pedidos de compra', ClipboardList], ['users', 'Usuários', ClipboardList]].map(([key, label, Icon]) => <button key={key as string} className={view === key ? 'active' : ''} onClick={() => go(key as string)}><Icon size={19} />{label as string}</button>)}</nav>
     <main className="content">{view === 'dashboard' && <Dashboard products={products} lowStock={lowStock} lowByCategory={lowByCategory} shoppingList={shoppingList} isPurchaseDay={isPurchaseDay} movements={movements} onNavigate={go} />}
@@ -155,6 +167,8 @@ export default function Page() {
     {toast && <div className="toast">{toast}</div>}
   </div>
 }
+
+function LoginScreen({ onLogin }: { onLogin: (user: { email?: string }) => void }) { const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [error, setError] = useState(''); const [busy, setBusy] = useState(false); const submit = async (event: React.FormEvent) => { event.preventDefault(); setBusy(true); setError(''); const { data, error: authError } = await createClient().auth.signInWithPassword({ email: email.trim(), password }); setBusy(false); if (authError || !data.user) return setError('E-mail ou senha inválidos.'); onLogin({ email: data.user.email }) }; return <main className="auth-screen"><form className="auth-card" onSubmit={submit}><p className="eyebrow">Estoque Vai Mais BG</p><h1>Acesso ao estoque</h1><p>Entre com seu e-mail e senha para continuar.</p><label>E-mail<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required /></label><label>Senha<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required /></label>{error && <div className="auth-error" role="alert">{error}</div>}<button className="primary" disabled={busy}>{busy ? 'Entrando…' : 'Entrar'}</button></form></main> }
 
 function Users({ users, setUsers }: { users: StockUser[]; setUsers: (users: StockUser[]) => void }) { const [name, setName] = useState(''); const add = async () => { const clean = name.trim(); if (!clean) return; const user = { id: crypto.randomUUID(), name: clean, active: true }; const { error } = await createClient().from('stock_users').insert(user); if (!error) { setUsers([...users, user].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))); setName('') } }; return <><PageTitle title="Usuários" subtitle="Cadastre quem realiza as movimentações" /><div className="user-create"><input placeholder="Nome do usuário" value={name} onChange={(event) => setName(event.target.value)} /><button className="primary" onClick={add}>Adicionar usuário</button></div><div className="user-list">{users.length ? users.map((user) => <div className="user-row" key={user.id}><strong>{user.name}</strong><span>Ativo</span></div>) : <Empty text="Nenhum usuário cadastrado ainda." />}</div></> }
 
