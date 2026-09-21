@@ -77,12 +77,48 @@
     z-index: 1001 !important;
     display: flex !important;
     flex-direction: column !important;
-    width: 500px !important;
+    width: 600px !important;
     max-width: calc(100vw - 40px) !important;
-    max-height: calc(100vh - 40px) !important;
+    height: min(80vh, 680px) !important;
+    max-height: 80vh !important;
     margin: 0 !important;
     transform: translate(-50%, -50%) !important;
+    overflow: hidden !important;
+  }
+
+  .modal-backdrop .edit-modal > * {
+    flex: 0 0 auto !important;
+    min-width: 0 !important;
+  }
+
+  .modal-backdrop .edit-modal form,
+  .modal-backdrop .edit-modal .modal-body,
+  .modal-backdrop .edit-modal > div:nth-child(2) {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    flex-direction: column !important;
+    gap: 16px !important;
     overflow-y: auto !important;
+    width: 100% !important;
+  }
+
+  .modal-backdrop .edit-modal label,
+  .modal-backdrop .edit-modal input,
+  .modal-backdrop .edit-modal select {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    flex: 0 0 auto !important;
+  }
+
+  .modal-backdrop .edit-modal input,
+  .modal-backdrop .edit-modal select {
+    box-sizing: border-box !important;
+  }
+
+  .modal-backdrop .edit-modal button {
+    flex: 0 0 auto !important;
   }
 }
 .category-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 18px 0; }
