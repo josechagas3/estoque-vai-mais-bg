@@ -56,6 +56,34 @@
 
 @media (min-width: 561px) {
   .drawer-scrim { display: none; }
+
+  .modal-backdrop {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 1000 !important;
+    display: block !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .modal-backdrop .edit-modal {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    z-index: 1001 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    width: 500px !important;
+    max-width: calc(100vw - 40px) !important;
+    max-height: calc(100vh - 40px) !important;
+    margin: 0 !important;
+    transform: translate(-50%, -50%) !important;
+    overflow-y: auto !important;
+  }
 }
 .category-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 18px 0; }
 .category-card { min-height: 108px; padding: 15px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper-2); color: var(--ink); text-align: left; display: flex; flex-direction: column; gap: 9px; position: relative; transition: border-color .2s, transform .2s; }
