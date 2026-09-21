@@ -32,8 +32,8 @@
   .movement-form select, .movement-form input, .modal input, .modal select { min-height: 50px; font-size: 16px; }
   .submit-large { font-size: 15px; }
   .stats button { min-height: 124px; }
-  .modal-backdrop { align-items: flex-end; }
-  .modal { max-height: 90svh; overflow-y: auto; border-radius: 18px 18px 0 0; padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
+  .modal-backdrop { align-items: center; justify-content: center; padding: 16px; overflow-y: auto; }
+  .modal, .edit-modal { width: min(100%, 520px); max-height: calc(100dvh - 32px); overflow-y: auto; border-radius: 18px; padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
 }
 @media (display-mode: standalone) {
   .topbar { padding-top: calc(16px + env(safe-area-inset-top)); }
