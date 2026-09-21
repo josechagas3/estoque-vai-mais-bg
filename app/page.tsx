@@ -68,7 +68,16 @@ export default function Page() {
 
   useEffect(() => {
     const supabase = createClient()
-    void supabase.auth.getUser().then(async ({ data }) => { const response = await fetch('/api/stock-users'); const payload = await response.json().catch(() => null); const rows = response.ok && Array.isArray(payload) ? payload : []; setHasUsers(rows.length > 0); const user = data.user; const profile = user ? rows.find((row: { auth_user_id?: string }) => row.auth_user_id === user.id) : null; setAuthUser(user && profile ? { id: user.id, recordId: profile.id, name: profile.name, username: profile.username } : null); setAuthMode(rows.length ? 'login' : 'welcome'); setAuthLoading(false) })
+    void supabase.auth.getUser().then(async ({ data }) => {
+      const { data: rows, error } = await supabase.from('stock_users').select('id,name,username,active,auth_user_id').eq('active', true).order('name')
+      const profiles = !error ? (rows ?? []) : []
+      setHasUsers(profiles.length > 0)
+      const user = data.user
+      const profile = user ? profiles.find((row) => row.auth_user_id === user.id) : null
+      setAuthUser(user && profile ? { id: user.id, recordId: profile.id, name: profile.name, username: profile.username } : null)
+      setAuthMode(profiles.length ? 'login' : 'welcome')
+      setAuthLoading(false)
+    })
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => { if (!session?.user) setAuthUser(null) })
     return () => listener.subscription.unsubscribe()
   }, [])
@@ -211,23 +220,27 @@ function LoginScreen({ onLogin, onCreate }: { onLogin: (user: { id: string; reco
     setError('')
 
     try {
-      const response = await fetch('/api/stock-users')
-      const payload: unknown = await response.json().catch(() => null)
-      const rows = response.ok && Array.isArray(payload) ? payload as Array<{ id: string; name: string; username?: string }> : []
+      const supabase = createClient()
       const normalizedUsername = username.trim().toLowerCase()
-      const profile = rows.find((row) => row.username?.toLowerCase() === normalizedUsername)
-
-      if (!profile) {
-        setError('Usuário ou senha inválidos.')
-        return
-      }
-
-      const { data, error: authError } = await createClient().auth.signInWithPassword({
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
         email: `${normalizedUsername}@vaimaisbg.com`,
         password,
       })
 
       if (authError || !data.user) {
+        setError('Usuário ou senha inválidos.')
+        return
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('stock_users')
+        .select('id,name,username,active,auth_user_id')
+        .eq('auth_user_id', data.user.id)
+        .eq('active', true)
+        .maybeSingle()
+
+      if (profileError || !profile) {
+        await supabase.auth.signOut()
         setError('Usuário ou senha inválidos.')
         return
       }
