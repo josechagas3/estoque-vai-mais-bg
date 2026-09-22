@@ -167,7 +167,22 @@ export default function Page() {
   setMovementNotes('')
     setQuantity(''); setSelectedProduct(''); setQuickActionProduct(null); setMovementSaving(false); setToast(`${type} registrada para ${product.name}.`)
   }
-  async function saveProduct() { if (!editing?.name.trim()) return; const supabase = createClient(); const payload = { id: editing.id, name: editing.name.trim(), category: editing.category, unit: editing.unit.trim(), current_quantity: editing.current, minimum_quantity: editing.minimum, ideal_quantity: editing.ideal, updated_at: today() }; const { error } = await supabase.from('stock_products').upsert(payload); if (error) return setToast('Não foi possível salvar o produto.'); setProducts((current) => current.some((p) => p.id === editing.id) ? current.map((p) => p.id === editing.id ? editing : p) : [...current, editing]); setEditing(null); setToast('Produto atualizado com sucesso') }
+  async function saveProduct() {
+    if (!editing?.name.trim() || !editing.unit.trim()) return setToast('Preencha o nome e a unidade do produto.')
+    const supabase = createClient()
+    const existing = products.some((product) => product.id === editing.id)
+    const payload = { name: editing.name.trim(), category: editing.category, unit: editing.unit.trim(), current_quantity: editing.current, minimum_quantity: editing.minimum, ideal_quantity: editing.ideal, updated_at: today() }
+    const result = existing
+      ? await supabase.from('stock_products').update(payload).eq('id', editing.id)
+      : await supabase.from('stock_products').insert({ id: editing.id, ...payload })
+    if (result.error) {
+      console.error('[v0] Erro ao salvar produto:', result.error)
+      return setToast(`Não foi possível salvar o produto: ${result.error.message}`)
+    }
+    setProducts((current) => existing ? current.map((product) => product.id === editing.id ? editing : product) : [...current, editing])
+    setEditing(null)
+    setToast('Produto atualizado com sucesso')
+  }
   async function removeProduct(id: string) { const { error } = await createClient().from('stock_products').delete().eq('id', id); if (error) return setToast('Não foi possível remover o produto.'); setProducts((current) => current.filter((p) => p.id !== id)); setMovements((current) => current.filter((m) => m.productId !== id)); setToast('Produto removido.') }
   async function confirmPurchase(items: Array<{ productId: string; quantity: number }>) {
     const validItems = items.filter((item) => Number.isInteger(item.quantity) && item.quantity > 0)
@@ -202,7 +217,7 @@ export default function Page() {
       {view === 'users' && <Users users={stockUsers} setUsers={setStockUsers} currentUserId={authUser.id} />}
     </main>
     {quickActionProduct && <QuickMovementModal type={view === 'entry' ? 'Entrada' : 'Saída'} product={quickActionProduct} quantity={quantity} setQuantity={setQuantity} notes={movementNotes} setNotes={setMovementNotes} saving={movementSaving} submit={registerMovement} close={() => { setQuickActionProduct(null); setSelectedProduct(''); setQuantity(''); setMovementNotes('') }} />}
-    {editing && <ProductEditModal product={editing} setProduct={setEditing} save={saveProduct} />}
+    {editing && <ProductEditModal product={editing} setProduct={setEditing} save={saveProduct} remove={products.some((product) => product.id === editing.id) ? () => { void removeProduct(editing.id); setEditing(null) } : undefined} />}
     {toast && <div className="toast">{toast}</div>}
   </div>
 }
