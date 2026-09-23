@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AlertTriangle, ArrowDownToLine, ArrowUpFromLine, CalendarDays, ClipboardList, LayoutDashboard, Menu, Package, Plus, Search, Trash2, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -44,6 +44,7 @@ export default function Page() {
   const [quantity, setQuantity] = useState('')
   const [movementNotes, setMovementNotes] = useState('')
   const [movementSaving, setMovementSaving] = useState(false)
+  const movementSubmitLock = useRef(false)
   const [quickActionProduct, setQuickActionProduct] = useState<Product | null>(null)
   const [editing, setEditing] = useState<Product | null>(null)
   const [toast, setToast] = useState('')
@@ -130,21 +131,23 @@ export default function Page() {
   const visibleMovements = movements.filter((m) => { const product = products.find((p) => p.id === m.productId); const age = Date.now() - new Date(m.date).getTime(); const periodOk = historyPeriod === 'Todos' || (historyPeriod === 'Hoje' && age <= 86400000) || (historyPeriod === '7' && age <= 7 * 86400000) || (historyPeriod === '30' && age <= 30 * 86400000) || (historyPeriod === 'Personalizado' && (!historyStart || new Date(m.date) >= new Date(`${historyStart}T00:00:00`)) && (!historyEnd || new Date(m.date) <= new Date(`${historyEnd}T23:59:59`))); return (historyFilter === 'Todos' || m.type === historyFilter) && periodOk && (historyUser === 'Todos' || m.userId === historyUser || m.userId === stockUsers.find((u) => u.auth_user_id === historyUser)?.id) && (historyCategory === 'Todas' || product?.category === historyCategory) && (!historyProduct || product?.name.toLowerCase().includes(historyProduct.toLowerCase())) }).slice().reverse()
 
   async function registerMovement(type: 'Entrada' | 'Saída') {
-    if (movementSaving) return
+    if (movementSubmitLock.current || movementSaving) return
     if (!authUser) return setToast('Faça login para registrar movimentações.')
     const amount = Number(quantity)
     const product = products.find((p) => p.id === selectedProduct)
     if (!product || !Number.isInteger(amount) || amount <= 0) return setToast('Informe um produto e uma quantidade válida.')
     if (!movementNotes.trim()) return setToast('Informe uma observação para continuar.')
     if (type === 'Saída' && amount > product.current) return setToast('A saída não pode deixar o estoque negativo.')
+    movementSubmitLock.current = true
+    setMovementSaving(true)
     const normalizedNotes = movementNotes.trim()
     const recentDuplicate = movements.some((movement) => movement.productId === product.id && movement.userId === authUser.recordId && movement.type === type && movement.quantity === amount && movement.notes?.trim() === normalizedNotes && Date.now() - new Date(movement.date).getTime() < 10000)
     if (recentDuplicate) return setToast('Esta movimentação já foi registrada.')
     const supabase = createClient()
     const duplicateSince = new Date(Date.now() - 10000).toISOString()
     const { data: databaseDuplicates, error: duplicateError } = await supabase.from('stock_movements').select('id').eq('product_id', product.id).eq('user_id', authUser.recordId).eq('usuario_id', authUser.id).eq('movement_type', type).eq('quantity', amount).eq('notes', normalizedNotes).gte('movement_date', duplicateSince).limit(1)
-    if (duplicateError) return setToast(`Erro ao validar movimentação: ${duplicateError.message}`)
-    if (databaseDuplicates?.length) return setToast('Esta movimentação já foi registrada.')
+    if (duplicateError) { movementSubmitLock.current = false; setMovementSaving(false); return setToast(`Erro ao validar movimentação: ${duplicateError.message}`) }
+    if (databaseDuplicates?.length) { movementSubmitLock.current = false; setMovementSaving(false); return setToast('Esta movimentação já foi registrada.') }
     const nextQuantity = type === 'Entrada' ? product.current + amount : product.current - amount
     setMovementSaving(true)
     const movementId = crypto.randomUUID()
@@ -152,6 +155,7 @@ export default function Page() {
     const { error: movementError } = await supabase.from('stock_movements').insert({ id: movementId, product_id: product.id, movement_type: type, quantity: amount, movement_date: movementDate, user_id: authUser.recordId, usuario_id: authUser.id, notes: normalizedNotes })
     if (movementError) {
       console.error('[v0] Erro ao inserir movimentação:', movementError)
+      movementSubmitLock.current = false
       setMovementSaving(false)
       return setToast(`Erro ao salvar movimentação: ${movementError.message}`)
     }
@@ -159,13 +163,14 @@ export default function Page() {
     if (productError) {
       console.error('[v0] Erro ao atualizar estoque:', productError)
       await supabase.from('stock_movements').delete().eq('id', movementId)
+      movementSubmitLock.current = false
       setMovementSaving(false)
       return setToast(`Erro ao atualizar estoque: ${productError.message}`)
     }
     setProducts((current) => current.map((p) => p.id === product.id ? { ...p, current: nextQuantity } : p))
     setMovements((current) => [...current, { id: movementId, productId: product.id, type, quantity: amount, date: movementDate, userId: authUser.recordId, notes: normalizedNotes }])
   setMovementNotes('')
-    setQuantity(''); setSelectedProduct(''); setQuickActionProduct(null); setMovementSaving(false); setToast(`${type} registrada para ${product.name}.`)
+    setQuantity(''); setSelectedProduct(''); setQuickActionProduct(null); movementSubmitLock.current = false; setMovementSaving(false); setToast(`${type} registrada para ${product.name}.`)
   }
   async function saveProduct() {
     if (!editing?.name.trim() || !editing.unit.trim()) return setToast('Preencha o nome e a unidade do produto.')
