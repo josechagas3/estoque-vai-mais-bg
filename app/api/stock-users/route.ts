@@ -81,6 +81,15 @@ export async function PATCH(request: Request) {
   const authorized = await authorizeAdmin()
   if (authorized instanceof NextResponse) return authorized
   const supabase = authorized; const username = body.username.trim().toLowerCase()
+  if (body.role && body.role !== 'admin') {
+    const { data: currentUser, error: currentUserError } = await supabase.from('stock_users').select('role,active').eq('id', body.id).maybeSingle()
+    if (currentUserError) return NextResponse.json({ error: 'Não foi possível validar o perfil atual.' }, { status: 500 })
+    if (currentUser?.role === 'admin' && currentUser.active) {
+      const { count, error: adminCountError } = await supabase.from('stock_users').select('id', { count: 'exact', head: true }).eq('active', true).eq('role', 'admin')
+      if (adminCountError) return NextResponse.json({ error: 'Não foi possível validar os administradores ativos.' }, { status: 500 })
+      if ((adminCount ?? 0) <= 1) return NextResponse.json({ error: 'É necessário manter pelo menos um administrador ativo.' }, { status: 409 })
+    }
+  }
   const authUpdate = await supabase.auth.admin.updateUserById(body.auth_user_id!, { ...(body.password ? { password: body.password } : {}), email: emailFor(username), user_metadata: { display_name: body.name.trim(), username } })
   if (authUpdate.error) return NextResponse.json({ error: 'Não foi possível atualizar o usuário.' }, { status: 400 })
   const { data, error } = await supabase.from('stock_users').update({ name: body.name.trim(), username, ...(body.role ? { role: body.role } : {}) }).eq('id', body.id).select('id,name,username,active,auth_user_id,role').single()
