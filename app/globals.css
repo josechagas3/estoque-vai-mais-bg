@@ -36,10 +36,11 @@ button:disabled{cursor:not-allowed;opacity:.65}.field-help{margin:-8px 0 12px;co
 @media(max-width:768px){.quick-movement-backdrop{align-items:center!important;justify-content:center!important;padding:16px!important;overflow-y:auto!important}.quick-movement-modal{width:min(100%,520px)!important;max-width:520px!important;height:auto!important;max-height:calc(100dvh - 32px)!important;margin:auto!important;overflow-y:auto!important;padding:20px 18px calc(20px + env(safe-area-inset-bottom))!important;background:var(--paper)!important;border:1px solid rgba(30,27,22,.12)!important;border-radius:18px!important;box-shadow:0 24px 80px rgba(30,27,22,.25)!important}}
 
 /* Organização do formulário de edição de produto. */
-.edit-modal{display:flex;flex-direction:column;gap:0;background:var(--paper);}
-.edit-modal .modal-head{flex:0 0 auto;margin-bottom:22px;padding-bottom:16px;border-bottom:1px solid var(--line)}
-.edit-modal .edit-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;min-height:0;overflow-y:auto;padding:2px 4px 4px 0}
-.edit-modal .edit-fields label:first-child,.edit-modal .edit-fields label:nth-child(2),.edit-modal .edit-fields label:nth-child(3){grid-column:1 / -1}
+.edit-modal{display:flex;flex-direction:column;gap:0;width:min(800px,calc(100vw - 48px));max-height:calc(100dvh - 48px);padding:24px;background:var(--paper)}
+ .edit-modal .modal-head{flex:0 0 auto;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+ .edit-modal .edit-fields{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;min-height:0;overflow-y:auto;padding:0 4px 2px 0}
+ .edit-modal .edit-fields label:first-child,.edit-modal .edit-fields label:nth-child(2),.edit-modal .edit-fields label:nth-child(3){grid-column:1 / -1}
+ .edit-modal .edit-fields label:nth-child(4),.edit-modal .edit-fields label:nth-child(5),.edit-modal .edit-fields label:nth-child(6){grid-column:span 2}
 .edit-modal .edit-fields label{display:flex;flex-direction:column;gap:7px;min-width:0;color:var(--muted);font-size:12px;font-weight:700}
 .edit-modal .edit-fields input,.edit-modal .edit-fields select{width:100%;min-width:0;box-sizing:border-box;background:#fff}
 .edit-modal .edit-fields input[type=number]{font-variant-numeric:tabular-nums}
