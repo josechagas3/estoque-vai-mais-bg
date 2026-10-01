@@ -54,6 +54,14 @@
   .nav button.active { background: var(--ink); color: var(--paper) !important; }
 }
 
+@media (max-width: 560px) {
+  .app-shell > .nav, .app-shell > .nav.open { position: fixed !important; top: 0 !important; left: 0 !important; margin: 0 !important; }
+  .app-shell > .nav:not(.open) { box-shadow: none !important; visibility: hidden; }
+  .app-shell > .topbar { position: sticky !important; top: 0; }
+  .app-shell > .content { padding-top: 12px !important; }
+  .app-shell > .content > :first-child { margin-top: 0 !important; }
+}
+
 @media (min-width: 561px) {
   .drawer-scrim { display: none; }
 }
