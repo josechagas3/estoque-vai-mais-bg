@@ -56,6 +56,17 @@
 
 @media (min-width: 561px) {
   .drawer-scrim { display: none; }
+
+  .modal-backdrop .edit-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    right: auto;
+    bottom: auto;
+    z-index: 51;
+    margin: 0;
+    transform: translate(-50%, -50%);
+  }
 }
 .category-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 18px 0; }
 .category-card { min-height: 108px; padding: 15px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper-2); color: var(--ink); text-align: left; display: flex; flex-direction: column; gap: 9px; position: relative; transition: border-color .2s, transform .2s; }
