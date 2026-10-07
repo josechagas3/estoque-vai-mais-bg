@@ -147,16 +147,26 @@ export default function Page() {
     if (type === 'Saída' && amount > product.current) return setToast('A saída não pode deixar o estoque negativo.')
     movementSubmitLock.current = true
     setMovementSaving(true)
+    const releaseMovementLock = () => { movementSubmitLock.current = false; setMovementSaving(false) }
+    const showDatabaseQuantity = (value: number) => setProducts((current) => current.map((p) => p.id === product.id ? { ...p, current: value } : p))
     const normalizedNotes = movementNotes.trim()
     const recentDuplicate = movements.some((movement) => movement.productId === product.id && movement.userId === authUser.recordId && movement.type === type && movement.quantity === amount && movement.notes?.trim() === normalizedNotes && Date.now() - new Date(movement.date).getTime() < 10000)
-    if (recentDuplicate) return setToast('Esta movimentação já foi registrada.')
+    if (recentDuplicate) { releaseMovementLock(); return setToast('Esta movimentação já foi registrada.') }
     const supabase = createClient()
     const duplicateSince = new Date(Date.now() - 10000).toISOString()
     const { data: databaseDuplicates, error: duplicateError } = await supabase.from('stock_movements').select('id').eq('product_id', product.id).eq('user_id', authUser.recordId).eq('usuario_id', authUser.id).eq('movement_type', type).eq('quantity', amount).eq('notes', normalizedNotes).gte('movement_date', duplicateSince).limit(1)
-    if (duplicateError) { movementSubmitLock.current = false; setMovementSaving(false); return setToast(`Erro ao validar movimentação: ${duplicateError.message}`) }
-    if (databaseDuplicates?.length) { movementSubmitLock.current = false; setMovementSaving(false); return setToast('Esta movimentação já foi registrada.') }
-    const nextQuantity = type === 'Entrada' ? product.current + amount : product.current - amount
-    setMovementSaving(true)
+    if (duplicateError) { releaseMovementLock(); return setToast(`Erro ao validar movimentação: ${duplicateError.message}`) }
+    if (databaseDuplicates?.length) { releaseMovementLock(); return setToast('Esta movimentação já foi registrada.') }
+    const { data: databaseProduct, error: stockReadError } = await supabase.from('stock_products').select('current_quantity').eq('id', product.id).single()
+    if (stockReadError || !databaseProduct) { releaseMovementLock(); return setToast(`Erro ao consultar o estoque atual: ${stockReadError?.message ?? 'produto não encontrado.'}`) }
+    const databaseQuantity = Number(databaseProduct.current_quantity)
+    if (databaseQuantity !== product.current) {
+      showDatabaseQuantity(databaseQuantity)
+      releaseMovementLock()
+      return setToast(`O estoque de ${product.name} foi atualizado por outra movimentação: anterior ${product.current}, atual ${databaseQuantity}. Confira e clique novamente para confirmar.`)
+    }
+    if (type === 'Saída' && amount > databaseQuantity) { releaseMovementLock(); return setToast('A saída não pode deixar o estoque negativo.') }
+    const nextQuantity = type === 'Entrada' ? databaseQuantity + amount : databaseQuantity - amount
     const movementId = crypto.randomUUID()
     const movementDate = today()
     const { error: movementError } = await supabase.from('stock_movements').insert({ id: movementId, product_id: product.id, movement_type: type, quantity: amount, movement_date: movementDate, user_id: authUser.recordId, usuario_id: authUser.id, notes: normalizedNotes })
@@ -166,13 +176,19 @@ export default function Page() {
       setMovementSaving(false)
       return setToast(`Erro ao salvar movimentação: ${movementError.message}`)
     }
-    const { error: productError } = await supabase.from('stock_products').update({ current_quantity: nextQuantity, updated_at: movementDate }).eq('id', product.id)
-    if (productError) {
-      console.error('[v0] Erro ao atualizar estoque:', productError)
-      await supabase.from('stock_movements').delete().eq('id', movementId)
-      movementSubmitLock.current = false
-      setMovementSaving(false)
-      return setToast(`Erro ao atualizar estoque: ${productError.message}`)
+    const { data: updatedProducts, error: productError } = await supabase.from('stock_products').update({ current_quantity: nextQuantity, updated_at: movementDate }).eq('id', product.id).eq('current_quantity', databaseQuantity).select('id')
+    if (productError || !updatedProducts?.length) {
+      if (productError) console.error('[v0] Erro ao atualizar estoque:', productError)
+      const { error: rollbackError } = await supabase.from('stock_movements').delete().eq('id', movementId)
+      if (rollbackError) console.error('[v0] Erro ao desfazer movimentação:', rollbackError)
+      if (!productError) {
+        const { data: latestProduct } = await supabase.from('stock_products').select('current_quantity').eq('id', product.id).single()
+        if (latestProduct) showDatabaseQuantity(Number(latestProduct.current_quantity))
+      }
+      releaseMovementLock()
+      if (rollbackError) return setToast(`O estoque não foi atualizado e não foi possível desfazer a movimentação (${movementId}). Avise o administrador.`)
+      if (productError) return setToast(`Erro ao atualizar estoque: ${productError.message}`)
+      return setToast(`O estoque de ${product.name} foi alterado por outra movimentação ao mesmo tempo. Nada foi gravado. Confira o valor atual e tente novamente.`)
     }
     setProducts((current) => current.map((p) => p.id === product.id ? { ...p, current: nextQuantity } : p))
     setMovements((current) => [...current, { id: movementId, productId: product.id, type, quantity: amount, date: movementDate, userId: authUser.recordId, notes: normalizedNotes }])
