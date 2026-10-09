@@ -211,7 +211,21 @@ export default function Page() {
     setEditing(null)
     setToast('Produto atualizado com sucesso')
   }
-  async function removeProduct(id: string) { const { error } = await createClient().from('stock_products').delete().eq('id', id); if (error) return setToast('Não foi possível remover o produto.'); setProducts((current) => current.filter((p) => p.id !== id)); setMovements((current) => current.filter((m) => m.productId !== id)); setToast('Produto removido.') }
+  async function removeProduct(id: string) {
+    if (!isAdmin) return setToast('Acesso permitido somente para administradores.')
+    const response = await fetch(`/api/stock-products/${id}`)
+    const summary = await response.json() as { product?: { name: string }; movementCount?: number; orderItemCount?: number; error?: string }
+    if (!response.ok || !summary.product) return setToast(summary.error ?? 'Não foi possível consultar os registros vinculados.')
+    const confirmed = window.confirm(`Este produto possui histórico:\n${summary.movementCount ?? 0} movimentações de estoque.\n${summary.orderItemCount ?? 0} registros em pedidos de compra.\n\nA exclusão removerá permanentemente esses dados.\nDeseja continuar?`)
+    if (!confirmed) return
+    const deletion = await fetch(`/api/stock-products/${id}`, { method: 'DELETE' })
+    const result = await deletion.json() as { error?: string }
+    if (!deletion.ok) return setToast(result.error ?? 'Não foi possível remover o produto.')
+    setProducts((current) => current.filter((p) => p.id !== id))
+    setMovements((current) => current.filter((m) => m.productId !== id))
+    setEditing(null)
+    setToast('Produto e registros vinculados removidos permanentemente.')
+  }
   async function confirmPurchase(items: Array<{ productId: string; quantity: number }>) {
     const validItems = items.filter((item) => Number.isInteger(item.quantity) && item.quantity > 0)
     if (!validItems.length) return setToast('Informe ao menos uma quantidade para comprar.')
@@ -247,7 +261,7 @@ export default function Page() {
       {view === 'users' && isAdmin && <Users users={stockUsers} setUsers={setStockUsers} currentUserId={authUser.id} />}
     </main>
     {quickActionProduct && <QuickMovementModal type={view === 'entry' ? 'Entrada' : 'Saída'} product={quickActionProduct} quantity={quantity} setQuantity={setQuantity} notes={movementNotes} setNotes={setMovementNotes} saving={movementSaving} submit={registerMovement} close={() => { setQuickActionProduct(null); setSelectedProduct(''); setQuantity(''); setMovementNotes('') }} />}
-    {editing && canEditProducts && <ProductEditModal product={editing} categories={Array.from(new Set(products.map((product) => product.category))).sort((a, b) => a.localeCompare('pt-BR'))} setProduct={setEditing} save={saveProduct} remove={products.some((product) => product.id === editing.id) ? () => { void removeProduct(editing.id); setEditing(null) } : undefined} />}
+    {editing && canEditProducts && <ProductEditModal product={editing} categories={Array.from(new Set(products.map((product) => product.category))).sort((a, b) => a.localeCompare('pt-BR'))} setProduct={setEditing} save={saveProduct} remove={products.some((product) => product.id === editing.id) ? () => { void removeProduct(editing.id) } : undefined} />}
     {toast && <div className="toast">{toast}</div>}
   </div>
 }
