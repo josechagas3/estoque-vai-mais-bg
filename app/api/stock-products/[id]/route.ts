@@ -3,8 +3,6 @@ import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-
 function serviceClient() {
   const url = process.env.SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -30,7 +28,7 @@ async function authorizeAdmin(): Promise<ReturnType<typeof serviceClient> | Next
 }
 
 function validateId(id: string) {
-  return UUID_PATTERN.test(id)
+  return id.trim().length > 0 && id.length <= 200
 }
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
