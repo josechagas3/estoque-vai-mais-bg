@@ -150,7 +150,6 @@ export default function Page() {
     const amount = parseQuantity(quantity)
     const product = products.find((p) => p.id === selectedProduct)
     if (!product || !isValidQuantity(amount)) return setToast('Informe um produto e uma quantidade válida.')
-    if (!movementNotes.trim()) return setToast('Informe uma observação para continuar.')
     if (type === 'Saída' && amount > product.current) return setToast('A saída não pode deixar o estoque negativo.')
     movementSubmitLock.current = true
     setMovementSaving(true)
