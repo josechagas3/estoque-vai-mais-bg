@@ -106,7 +106,7 @@ export default function Page() {
     const supabase = createClient()
     void Promise.all([
       supabase.from('stock_products').select('id,name,category,unit,current_quantity,minimum_quantity,ideal_quantity').order('name'),
-      supabase.from('stock_movements').select('id,product_id,movement_type,quantity,movement_date,user_id,usuario_id,notes').order('movement_date', { ascending: true }),
+      supabase.from('stock_movements').select('id,product_id,movement_type,quantity,movement_date,user_id,usuario_id,notes').order('movement_date', { ascending: false }),
       supabase.from('stock_users').select('id,name,username,active,auth_user_id,role').eq('active', true).order('name'),
       supabase.from('pedidos_compra').select('id,data_criacao,status').order('data_criacao', { ascending: false }),
     ]).then(async ([productResult, movementResult, usersResult, orderResult]) => {
