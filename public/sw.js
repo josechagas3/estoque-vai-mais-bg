@@ -1,4 +1,4 @@
-const CACHE_NAME = 'estoque-vai-mais-bg-v1';
+const CACHE_NAME = 'estoque-vai-mais-bg-v2';
 const APP_SHELL = ['/', '/manifest.webmanifest', '/icon.svg', '/apple-icon.png'];
 
 self.addEventListener('install', (event) => {
