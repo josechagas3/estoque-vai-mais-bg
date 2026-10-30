@@ -101,6 +101,7 @@ export default function Page() {
   useEffect(() => { if (authUser) setCurrentUserId(authUser.id) }, [authUser])
 
   useEffect(() => {
+    if (!authUser) return
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => undefined)
     const supabase = createClient()
     void Promise.all([
@@ -137,7 +138,7 @@ export default function Page() {
         setOrders(orderRows.map((o) => ({ id: o.id, createdAt: o.data_criacao, status: o.status, items: itemsByOrder.get(o.id) ?? [] })))
       }
     })
-  }, [])
+  }, [authUser])
   useEffect(() => { if (toast) { const t = setTimeout(() => setToast(''), 2600); return () => clearTimeout(t) } }, [toast])
 
   const lowStock = products.filter((p) => p.current <= p.minimum)
@@ -261,7 +262,7 @@ export default function Page() {
   return <div className="app-shell">
     <header className="topbar"><div className="brand">Estoque <span>Vai Mais BG</span></div><button className="menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'} aria-expanded={menuOpen}><Menu size={22} /></button><div className="top-date">Olá, {authUser.name} · {new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}</div><button className="logout-button" onClick={() => void createClient().auth.signOut()}>Sair</button></header>
     {menuOpen && <button className="drawer-scrim" aria-label="Fechar menu" onClick={() => setMenuOpen(false)} />}
-    <nav className={`nav ${menuOpen ? 'open' : ''}`} aria-label="Navegação principal">{[['dashboard', 'Dashboard', LayoutDashboard, true], ['products', 'Produtos', Package, true], ['entry', 'Entrada de estoque', ArrowDownToLine, canOperate], ['exit', 'Registrar saída', ArrowUpFromLine, canOperate], ['history', 'Histórico', ClipboardList, true], ['purchase', 'Lista de compras', AlertTriangle, canOperate], ['orders', 'Pedidos de compra', ClipboardList, canOperate], ['report', 'Relatório contábil', FileText, true], ['users', 'Usuários', ClipboardList, canViewUsers]].filter((item) => item[3]).map(([key, label, Icon]) => <button key={key as string} className={view === key ? 'active' : ''} onClick={() => go(key as string)}><Icon size={19} />{label as string}</button>)}</nav>
+    <nav className={`nav ${menuOpen ? 'open' : ''}`} aria-label="Navegação principal">{[['dashboard', 'Dashboard', LayoutDashboard, true], ['products', 'Produtos', Package, true], ['entry', 'Entrada de estoque', ArrowDownToLine, canOperate], ['exit', 'Registrar saída', ArrowUpFromLine, canOperate], ['history', 'Histórico', ClipboardList, true], ['purchase', 'Lista de compras', AlertTriangle, canOperate], ['orders', 'Pedidos de compra', ClipboardList, canOperate], ['report', 'Relatório contábil', FileText, true], ['users', 'Usu��rios', ClipboardList, canViewUsers]].filter((item) => item[3]).map(([key, label, Icon]) => <button key={key as string} className={view === key ? 'active' : ''} onClick={() => go(key as string)}><Icon size={19} />{label as string}</button>)}</nav>
     <main className="content">{view === 'dashboard' && <Dashboard products={products} lowStock={lowStock} lowByCategory={lowByCategory} shoppingList={shoppingList} isPurchaseDay={isPurchaseDay} movements={movements} onNavigate={go} />}
       {view === 'products' && <><PageTitle title="Produtos" subtitle={`${products.length} produtos cadastrados`} action={canEditProducts ? <div className="title-actions"><button className="primary" onClick={() => setEditing({ id: crypto.randomUUID(), name: '', category: categories[0], unit: 'un', current: 0, minimum: 0, ideal: 0 })}><Plus size={17} /> Novo produto</button></div> : undefined} /><div className="search"><Search size={17} /><input placeholder="Buscar produto ou categoria" value={query} onChange={(e) => setQuery(e.target.value)} /></div><ProductCategoryView products={products} selected={productsCategory} onSelect={setProductsCategory} query={query} onEdit={canEditProducts ? setEditing : undefined} />{canEditProducts && <CategoryManager products={products} onUpdated={(oldCategory, newCategory) => { setProducts((current) => current.map((product) => product.category === oldCategory ? { ...product, category: newCategory } : product)); setProductsCategory(newCategory) }} />}</>}
       {(view === 'entry' || view === 'exit') && <CategoryMovementForm users={stockUsers} currentUserId={currentUserId} setCurrentUserId={setCurrentUserId} type={view === 'entry' ? 'Entrada' : 'Saída'} products={products} category={selectedCategory} selected={selectedProduct} quantity={quantity} setCategory={(value) => { setSelectedCategory(value); setSelectedProduct('') }} setSelected={setSelectedProduct} setQuantity={setQuantity} notes={movementNotes} setNotes={setMovementNotes} submit={registerMovement} onSelectProduct={setQuickActionProduct} />}
